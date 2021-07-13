@@ -10,9 +10,10 @@ description = "JUnit Platform Runner"
 dependencies {
 	api(platform(projects.junitBom))
 	api(libs.junit4)
-	api(libs.apiguardian)
 	api(projects.junitPlatformLauncher)
 	api(projects.junitPlatformSuiteApi)
+
+	compileOnlyApi(libs.apiguardian)
 
 	implementation(projects.junitPlatformSuiteCommons)
 
@@ -25,7 +26,7 @@ tasks.jar {
 		bnd("""
 			# Import JUnit4 packages with a version
 			Import-Package: \
-				!org.apiguardian.api,\
+				${extra["importAPIGuardian"]},\
 				org.junit.platform.commons.logging;status=INTERNAL,\
 				org.junit.runner.*;version="[${libs.versions.junit4Min.get()},5)",\
 				*

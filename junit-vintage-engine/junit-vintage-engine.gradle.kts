@@ -1,4 +1,4 @@
-import aQute.bnd.gradle.BundleTaskConvention;
+import aQute.bnd.gradle.BundleTaskConvention
 
 plugins {
 	`java-library-conventions`
@@ -12,9 +12,10 @@ description = "JUnit Vintage Engine"
 
 dependencies {
 	api(platform(projects.junitBom))
-	api(libs.apiguardian)
 	api(projects.junitPlatformEngine)
 	api(libs.junit4)
+
+	compileOnlyApi(libs.apiguardian)
 
 	testFixturesApi(platform(libs.groovy2.bom))
 	testFixturesApi(libs.spock1)
@@ -38,7 +39,7 @@ tasks {
 			bnd("""
 				# Import JUnit4 packages with a version
 				Import-Package: \
-					!org.apiguardian.api,\
+					${extra["importAPIGuardian"]},\
 					junit.runner;version="[${junit4Min},5)",\
 					org.junit;version="[${junit4Min},5)",\
 					org.junit.experimental.categories;version="[${junit4Min},5)",\
@@ -47,6 +48,11 @@ tasks {
 					org.junit.runner.*;version="[${junit4Min},5)",\
 					org.junit.runners.model;version="[${junit4Min},5)",\
 					*
+
+				Provide-Capability:\
+					org.junit.platform.engine;\
+						org.junit.platform.engine='junit-vintage';\
+						version:Version="${'$'}{version_cleanup;${project.version}}"
 			""")
 		}
 	}

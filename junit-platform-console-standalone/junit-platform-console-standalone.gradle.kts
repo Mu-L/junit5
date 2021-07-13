@@ -13,6 +13,9 @@ dependencies {
 	shadowed(projects.junitJupiterEngine)
 	shadowed(projects.junitJupiterParams)
 	shadowed(projects.junitVintageEngine)
+	shadowed(libs.apiguardian) {
+		because("downstream projects need it to avoid compiler warnings")
+	}
 }
 
 val jupiterVersion = rootProject.version
@@ -44,7 +47,7 @@ tasks {
 			bnd("""
 				# Customize the imports because this is an aggregate jar
 				Import-Package: \
-					!org.apiguardian.api,\
+					${extra["importAPIGuardian"]},\
 					kotlin.*;resolution:="optional",\
 					*
 				# Disable the APIGuardian plugin since everything was already

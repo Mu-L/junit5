@@ -1,3 +1,4 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import org.gradle.api.tasks.PathSensitivity.RELATIVE
 
 plugins {
@@ -140,7 +141,7 @@ val allMainClasses by tasks.registering {
 val compileModule by tasks.registering(JavaCompile::class) {
 	dependsOn(allMainClasses)
 	source = fileTree(moduleSourceDir)
-	destinationDir = moduleOutputDir
+	destinationDirectory.set(moduleOutputDir)
 	sourceCompatibility = "9"
 	targetCompatibility = "9"
 	classpath = files()
@@ -163,7 +164,7 @@ tasks.withType<Jar>().configureEach {
 		into("META-INF")
 	}
 	val suffix = archiveClassifier.getOrElse("")
-	if (suffix.isBlank() || suffix == "all") { // "all" is used by shadow plugin
+	if (suffix.isBlank() || this is ShadowJar) {
 		dependsOn(allMainClasses, compileModule)
 		from("$moduleOutputDir/$javaModuleName") {
 			include("module-info.class")
@@ -260,20 +261,38 @@ afterEvaluate {
 	}
 	tasks {
 		compileJava {
-			options.release.set(extension.mainJavaVersion.majorVersion.toInt())
+			if (extension.configureRelease) {
+				options.release.set(extension.mainJavaVersion.majorVersion.toInt())
+			} else {
+				sourceCompatibility = extension.mainJavaVersion.majorVersion
+				targetCompatibility = extension.mainJavaVersion.majorVersion
+			}
 		}
 		compileTestJava {
-			options.release.set(extension.testJavaVersion.majorVersion.toInt())
+			if (extension.configureRelease) {
+				options.release.set(extension.testJavaVersion.majorVersion.toInt())
+			} else {
+				sourceCompatibility = extension.testJavaVersion.majorVersion
+				targetCompatibility = extension.testJavaVersion.majorVersion
+			}
 		}
 	}
 	pluginManager.withPlugin("groovy") {
 		tasks.named<GroovyCompile>("compileGroovy").configure {
-			sourceCompatibility = extension.mainJavaVersion.majorVersion
-			targetCompatibility = extension.mainJavaVersion.majorVersion
+			if (extension.configureRelease) {
+				options.release.set(extension.mainJavaVersion.majorVersion.toInt())
+			} else {
+				sourceCompatibility = extension.mainJavaVersion.majorVersion
+				targetCompatibility = extension.mainJavaVersion.majorVersion
+			}
 		}
 		tasks.named<GroovyCompile>("compileTestGroovy").configure {
-			sourceCompatibility = extension.testJavaVersion.majorVersion
-			targetCompatibility = extension.testJavaVersion.majorVersion
+			if (extension.configureRelease) {
+				options.release.set(extension.testJavaVersion.majorVersion.toInt())
+			} else {
+				sourceCompatibility = extension.testJavaVersion.majorVersion
+				targetCompatibility = extension.testJavaVersion.majorVersion
+			}
 		}
 	}
 }
