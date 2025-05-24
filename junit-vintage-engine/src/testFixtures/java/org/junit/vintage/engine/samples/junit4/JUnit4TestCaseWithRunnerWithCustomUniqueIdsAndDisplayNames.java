@@ -10,10 +10,6 @@
 
 package org.junit.vintage.engine.samples.junit4;
 
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
-
-import java.lang.annotation.Retention;
-
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -31,9 +27,4 @@ public class JUnit4TestCaseWithRunnerWithCustomUniqueIdsAndDisplayNames {
 		Assert.fail();
 	}
 
-}
-
-@Retention(RUNTIME)
-@interface Label {
-	String value();
 }

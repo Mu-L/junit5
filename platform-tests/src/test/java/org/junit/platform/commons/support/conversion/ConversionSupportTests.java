@@ -22,7 +22,6 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -42,6 +41,7 @@ import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -202,9 +202,9 @@ class ConversionSupportTests {
 
 	@Test
 	void convertsStringToPath() {
-		assertConverts("path", Path.class, Paths.get("path"));
-		assertConverts("/path", Path.class, Paths.get("/path"));
-		assertConverts("/some/path", Path.class, Paths.get("/some/path"));
+		assertConverts("path", Path.class, Path.of("path"));
+		assertConverts("/path", Path.class, Path.of("/path"));
+		assertConverts("/some/path", Path.class, Path.of("/some/path"));
 	}
 
 	// --- java.lang -----------------------------------------------------------
@@ -229,12 +229,11 @@ class ConversionSupportTests {
 			var customType = testClassLoader.loadClass(customTypeName);
 			assertThat(customType.getClassLoader()).isSameAs(testClassLoader);
 
-			var declaringExecutable = ReflectionSupport.findMethod(customType, "foo").get();
+			var declaringExecutable = ReflectionSupport.findMethod(customType, "foo").orElseThrow();
 			assertThat(declaringExecutable.getDeclaringClass().getClassLoader()).isSameAs(testClassLoader);
 
 			var clazz = (Class<?>) convert(customTypeName, Class.class, classLoader(declaringExecutable));
-			assertThat(clazz).isNotEqualTo(Enigma.class);
-			assertThat(clazz).isEqualTo(customType);
+			assertThat(clazz).isNotNull().isNotEqualTo(Enigma.class).isEqualTo(customType);
 			assertThat(clazz.getClassLoader()).isSameAs(testClassLoader);
 		}
 	}
@@ -309,7 +308,7 @@ class ConversionSupportTests {
 
 	// -------------------------------------------------------------------------
 
-	private void assertConverts(String input, Class<?> targetClass, Object expectedOutput) {
+	private void assertConverts(@Nullable String input, Class<?> targetClass, @Nullable Object expectedOutput) {
 		var result = convert(input, targetClass);
 
 		assertThat(result) //
@@ -317,16 +316,16 @@ class ConversionSupportTests {
 				.isEqualTo(expectedOutput);
 	}
 
-	private Object convert(String input, Class<?> targetClass) {
+	private @Nullable Object convert(@Nullable String input, Class<?> targetClass) {
 		return convert(input, targetClass, classLoader());
 	}
 
-	private Object convert(String input, Class<?> targetClass, ClassLoader classLoader) {
+	private @Nullable Object convert(@Nullable String input, Class<?> targetClass, ClassLoader classLoader) {
 		return ConversionSupport.convert(input, targetClass, classLoader);
 	}
 
 	private static ClassLoader classLoader() {
-		Method declaringExecutable = ReflectionSupport.findMethod(ConversionSupportTests.class, "foo").get();
+		Method declaringExecutable = ReflectionSupport.findMethod(ConversionSupportTests.class, "foo").orElseThrow();
 		return classLoader(declaringExecutable);
 	}
 

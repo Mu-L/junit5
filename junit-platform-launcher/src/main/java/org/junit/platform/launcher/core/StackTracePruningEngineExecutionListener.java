@@ -13,7 +13,6 @@ package org.junit.platform.launcher.core;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import org.junit.platform.commons.util.ExceptionUtils;
 import org.junit.platform.engine.EngineExecutionListener;
@@ -50,21 +49,20 @@ class StackTracePruningEngineExecutionListener extends DelegatingEngineExecution
 		return testDescriptor.getAncestors() //
 				.stream() //
 				.map(TestDescriptor::getSource) //
-				.filter(Optional::isPresent) //
-				.map(Optional::get) //
+				.flatMap(Optional::stream) //
 				.map(source -> {
-					if (source instanceof ClassSource) {
-						return ((ClassSource) source).getClassName();
+					if (source instanceof ClassSource classSource) {
+						return classSource.getClassName();
 					}
-					else if (source instanceof MethodSource) {
-						return ((MethodSource) source).getClassName();
+					else if (source instanceof MethodSource methodSource) {
+						return methodSource.getClassName();
 					}
 					else {
 						return null;
 					}
 				}) //
 				.filter(Objects::nonNull) //
-				.collect(Collectors.toList());
+				.toList();
 	}
 
 }

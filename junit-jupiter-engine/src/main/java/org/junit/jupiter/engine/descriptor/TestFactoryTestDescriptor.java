@@ -25,6 +25,7 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
 import org.apiguardian.api.API;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.DynamicContainer;
 import org.junit.jupiter.api.DynamicNode;
 import org.junit.jupiter.api.DynamicTest;
@@ -58,7 +59,8 @@ public class TestFactoryTestDescriptor extends TestMethodTestDescriptor implemen
 	public static final String DYNAMIC_CONTAINER_SEGMENT_TYPE = "dynamic-container";
 	public static final String DYNAMIC_TEST_SEGMENT_TYPE = "dynamic-test";
 
-	private static final ReflectiveInterceptorCall<Method, Object> interceptorCall = InvocationInterceptor::interceptTestFactoryMethod;
+	@SuppressWarnings("NullAway")
+	private static final ReflectiveInterceptorCall<Method, @Nullable Object> interceptorCall = InvocationInterceptor::interceptTestFactoryMethod;
 	private static final InterceptingExecutableInvoker executableInvoker = new InterceptingExecutableInvoker();
 
 	private final DynamicDescendantFilter dynamicDescendantFilter;
@@ -133,15 +135,18 @@ public class TestFactoryTestDescriptor extends TestMethodTestDescriptor implemen
 	}
 
 	@SuppressWarnings("unchecked")
-	private Stream<DynamicNode> toDynamicNodeStream(Object testFactoryMethodResult) {
-		if (testFactoryMethodResult instanceof DynamicNode) {
-			return Stream.of((DynamicNode) testFactoryMethodResult);
+	private Stream<DynamicNode> toDynamicNodeStream(@Nullable Object testFactoryMethodResult) {
+		if (testFactoryMethodResult == null) {
+			throw new JUnitException("@TestFactory method must not return null");
+		}
+		if (testFactoryMethodResult instanceof DynamicNode node) {
+			return Stream.of(node);
 		}
 		return (Stream<DynamicNode>) CollectionUtils.toStream(testFactoryMethodResult);
 	}
 
 	private JUnitException invalidReturnTypeException(Throwable cause) {
-		String message = String.format("Objects produced by @TestFactory method '%s' must be of type %s.",
+		String message = "Objects produced by @TestFactory method '%s' must be of type %s.".formatted(
 			getTestMethod().toGenericString(), DynamicNode.class.getName());
 		return new JUnitException(message, cause);
 	}
@@ -155,8 +160,7 @@ public class TestFactoryTestDescriptor extends TestMethodTestDescriptor implemen
 		Optional<TestSource> customTestSource = node.getTestSourceUri().map(TestFactoryTestDescriptor::fromUri);
 		TestSource source = customTestSource.orElse(defaultTestSource);
 
-		if (node instanceof DynamicTest) {
-			DynamicTest test = (DynamicTest) node;
+		if (node instanceof DynamicTest test) {
 			uniqueId = parent.getUniqueId().append(DYNAMIC_TEST_SEGMENT_TYPE, "#" + index);
 			descriptorCreator = () -> new DynamicTestTestDescriptor(uniqueId, index, test, source, configuration);
 		}

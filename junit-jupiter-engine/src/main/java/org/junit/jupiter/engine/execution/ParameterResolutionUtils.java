@@ -11,8 +11,9 @@
 package org.junit.jupiter.engine.execution;
 
 import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toList;
 import static org.apiguardian.api.API.Status.INTERNAL;
+import static org.junit.platform.commons.util.KotlinReflectionUtils.getKotlinSuspendingFunctionParameters;
+import static org.junit.platform.commons.util.KotlinReflectionUtils.isKotlinSuspendingFunction;
 import static org.junit.platform.commons.util.ReflectionUtils.isAssignableTo;
 
 import java.lang.reflect.Constructor;
@@ -23,6 +24,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.apiguardian.api.API;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
@@ -58,10 +60,13 @@ public class ParameterResolutionUtils {
 	 * @return the array of Objects to be used as parameters in the executable
 	 * invocation; never {@code null} though potentially empty
 	 */
-	public static Object[] resolveParameters(Method method, Optional<Object> target, ExtensionContext extensionContext,
-			ExtensionRegistry extensionRegistry) {
+	public static @Nullable Object[] resolveParameters(Method method, Optional<Object> target,
+			ExtensionContext extensionContext, ExtensionRegistry extensionRegistry) {
 
-		return resolveParameters(method, target, Optional.empty(), extensionContext, extensionRegistry);
+		return resolveParameters(method, target, Optional.empty(), __ -> extensionContext, extensionRegistry,
+			isKotlinSuspendingFunction(method) //
+					? getKotlinSuspendingFunctionParameters(method) //
+					: method.getParameters());
 	}
 
 	/**
@@ -81,18 +86,26 @@ public class ParameterResolutionUtils {
 	 * @return the array of Objects to be used as parameters in the executable
 	 * invocation; never {@code null} though potentially empty
 	 */
-	public static Object[] resolveParameters(Executable executable, Optional<Object> target,
+	public static @Nullable Object[] resolveParameters(Executable executable, Optional<Object> target,
 			Optional<Object> outerInstance, ExtensionContext extensionContext, ExtensionRegistry extensionRegistry) {
 		return resolveParameters(executable, target, outerInstance, __ -> extensionContext, extensionRegistry);
 	}
 
-	public static Object[] resolveParameters(Executable executable, Optional<Object> target,
+	public static @Nullable Object[] resolveParameters(Executable executable, Optional<Object> target,
 			Optional<Object> outerInstance, ExtensionContextSupplier extensionContext,
 			ExtensionRegistry extensionRegistry) {
 
+		return resolveParameters(executable, target, outerInstance, extensionContext, extensionRegistry,
+			executable.getParameters());
+	}
+
+	private static @Nullable Object[] resolveParameters(Executable executable, Optional<Object> target,
+			Optional<Object> outerInstance, ExtensionContextSupplier extensionContext,
+			ExtensionRegistry extensionRegistry, Parameter[] parameters) {
+
 		Preconditions.notNull(target, "target must not be null");
 
-		Parameter[] parameters = executable.getParameters();
+		@Nullable
 		Object[] values = new Object[parameters.length];
 		int start = 0;
 
@@ -111,19 +124,19 @@ public class ParameterResolutionUtils {
 		return values;
 	}
 
-	private static Object resolveParameter(ParameterContext parameterContext, Executable executable,
+	private static @Nullable Object resolveParameter(ParameterContext parameterContext, Executable executable,
 			ExtensionContextSupplier extensionContext, ExtensionRegistry extensionRegistry) {
 
 		try {
 			// @formatter:off
 			List<ParameterResolver> matchingResolvers = extensionRegistry.stream(ParameterResolver.class)
 					.filter(resolver -> resolver.supportsParameter(parameterContext, extensionContext.get(resolver)))
-					.collect(toList());
+					.toList();
 			// @formatter:on
 
 			if (matchingResolvers.isEmpty()) {
 				throw new ParameterResolutionException(
-					String.format("No ParameterResolver registered for parameter [%s] in %s [%s].",
+					"No ParameterResolver registered for parameter [%s] in %s [%s].".formatted(
 						parameterContext.getParameter(), asLabel(executable), executable.toGenericString()));
 			}
 
@@ -134,7 +147,7 @@ public class ParameterResolutionUtils {
 						.collect(joining(", "));
 				// @formatter:on
 				throw new ParameterResolutionException(
-					String.format("Discovered multiple competing ParameterResolvers for parameter [%s] in %s [%s]: %s",
+					"Discovered multiple competing ParameterResolvers for parameter [%s] in %s [%s]: %s".formatted(
 						parameterContext.getParameter(), asLabel(executable), executable.toGenericString(), resolvers));
 			}
 
@@ -142,10 +155,10 @@ public class ParameterResolutionUtils {
 			Object value = resolver.resolveParameter(parameterContext, extensionContext.get(resolver));
 			validateResolvedType(parameterContext.getParameter(), value, executable, resolver);
 
-			logger.trace(() -> String.format(
-				"ParameterResolver [%s] resolved a value of type [%s] for parameter [%s] in %s [%s].",
-				resolver.getClass().getName(), (value != null ? value.getClass().getName() : null),
-				parameterContext.getParameter(), asLabel(executable), executable.toGenericString()));
+			logger.trace(
+				() -> "ParameterResolver [%s] resolved a value of type [%s] for parameter [%s] in %s [%s].".formatted(
+					resolver.getClass().getName(), (value != null ? value.getClass().getName() : null),
+					parameterContext.getParameter(), asLabel(executable), executable.toGenericString()));
 
 			return value;
 		}
@@ -155,8 +168,8 @@ public class ParameterResolutionUtils {
 		catch (Throwable throwable) {
 			UnrecoverableExceptions.rethrowIfUnrecoverable(throwable);
 
-			String message = String.format("Failed to resolve parameter [%s] in %s [%s]",
-				parameterContext.getParameter(), asLabel(executable), executable.toGenericString());
+			String message = "Failed to resolve parameter [%s] in %s [%s]".formatted(parameterContext.getParameter(),
+				asLabel(executable), executable.toGenericString());
 
 			if (StringUtils.isNotBlank(throwable.getMessage())) {
 				message += ": " + throwable.getMessage();
@@ -166,7 +179,7 @@ public class ParameterResolutionUtils {
 		}
 	}
 
-	private static void validateResolvedType(Parameter parameter, Object value, Executable executable,
+	private static void validateResolvedType(Parameter parameter, @Nullable Object value, Executable executable,
 			ParameterResolver resolver) {
 
 		Class<?> type = parameter.getType();

@@ -28,6 +28,7 @@ import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
+import org.jspecify.annotations.NullUnmarked;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
@@ -61,8 +62,7 @@ class AutoCloseTests extends AbstractJupiterTestEngineTests {
 	@Test
 	void blankCloseMethodName() {
 		Class<?> testClass = BlankCloseMethodNameTestCase.class;
-		String msg = String.format("@AutoClose on field %s.field must specify a method name.",
-			testClass.getCanonicalName());
+		String msg = "@AutoClose on field %s.field must specify a method name.".formatted(testClass.getCanonicalName());
 		Events tests = executeTestsForClass(testClass).testEvents();
 		assertFailingWithMessage(tests, msg);
 	}
@@ -70,8 +70,7 @@ class AutoCloseTests extends AbstractJupiterTestEngineTests {
 	@Test
 	void primitiveTypeCannotBeClosed() {
 		Class<?> testClass = PrimitiveFieldTestCase.class;
-		String msg = String.format("@AutoClose is not supported on primitive field %s.x.",
-			testClass.getCanonicalName());
+		String msg = "@AutoClose is not supported on primitive field %s.x.".formatted(testClass.getCanonicalName());
 		Events tests = executeTestsForClass(testClass).testEvents();
 		assertFailingWithMessage(tests, msg);
 	}
@@ -79,7 +78,7 @@ class AutoCloseTests extends AbstractJupiterTestEngineTests {
 	@Test
 	void arrayCannotBeClosed() {
 		Class<?> testClass = ArrayFieldTestCase.class;
-		String msg = String.format("@AutoClose is not supported on array field %s.x.", testClass.getCanonicalName());
+		String msg = "@AutoClose is not supported on array field %s.x.".formatted(testClass.getCanonicalName());
 		Events tests = executeTestsForClass(testClass).testEvents();
 		assertFailingWithMessage(tests, msg);
 	}
@@ -87,8 +86,7 @@ class AutoCloseTests extends AbstractJupiterTestEngineTests {
 	@Test
 	void nullCannotBeClosed(@TrackLogRecords LogRecordListener listener) {
 		Class<?> testClass = NullCloseableFieldTestCase.class;
-		String msg = String.format("Cannot @AutoClose field %s.field because it is null.",
-			testClass.getCanonicalName());
+		String msg = "Cannot @AutoClose field %s.field because it is null.".formatted(testClass.getCanonicalName());
 		Events tests = executeTestsForClass(testClass).testEvents();
 		tests.assertStatistics(stats -> stats.succeeded(1).failed(0));
 		assertThat(listener.stream(Level.WARNING)).map(LogRecord::getMessage).anyMatch(msg::equals);
@@ -394,7 +392,7 @@ class AutoCloseTests extends AbstractJupiterTestEngineTests {
 	}
 
 	private void assertMissingCloseMethod(Class<?> testClass, String methodName) {
-		String msg = String.format("Cannot @AutoClose field %s.field because %s does not define method %s().",
+		String msg = "Cannot @AutoClose field %s.field because %s does not define method %s().".formatted(
 			testClass.getCanonicalName(), String.class.getName(), methodName);
 		Events tests = executeTestsForClass(testClass).testEvents();
 		assertFailingWithMessage(tests, msg);
@@ -425,6 +423,7 @@ class AutoCloseTests extends AbstractJupiterTestEngineTests {
 		final int[] x = {};
 	}
 
+	@NullUnmarked
 	static class NullCloseableFieldTestCase implements TestInterface {
 
 		@AutoClose
@@ -459,6 +458,7 @@ class AutoCloseTests extends AbstractJupiterTestEngineTests {
 
 	@TestInstance(PER_METHOD)
 	@SuppressWarnings("JUnitMalformedDeclaration")
+	@NullUnmarked
 	static class InstancePerMethodTestCase {
 
 		@AutoClose
@@ -697,6 +697,7 @@ class AutoCloseTests extends AbstractJupiterTestEngineTests {
 		}
 	}
 
+	@NullUnmarked
 	static class AutoCloseSpy implements AutoCloseable, Runnable {
 
 		private final String prefix;

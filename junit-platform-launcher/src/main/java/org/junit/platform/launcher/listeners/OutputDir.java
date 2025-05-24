@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.security.SecureRandom;
 import java.util.Optional;
@@ -36,7 +35,7 @@ public class OutputDir {
 		Pattern.quote(OUTPUT_DIR_UNIQUE_NUMBER_PLACEHOLDER));
 
 	public static OutputDir create(Optional<String> customDir) {
-		return create(customDir, () -> Paths.get("."));
+		return create(customDir, () -> Path.of("."));
 	}
 
 	static OutputDir create(Optional<String> customDir, Supplier<Path> currentWorkingDir) {
@@ -98,7 +97,7 @@ public class OutputDir {
 	}
 
 	public Path createFile(String prefix, String extension) throws UncheckedIOException {
-		String filename = String.format("%s-%d.%s", prefix, Math.abs(random.nextLong()), extension);
+		String filename = "%s-%d.%s".formatted(prefix, Math.abs(random.nextLong()), extension);
 		Path outputFile = path.resolve(filename);
 
 		try {

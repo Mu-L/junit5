@@ -10,17 +10,17 @@
 
 package org.junit.platform.launcher.core;
 
-import static java.util.Collections.emptyList;
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.partitioningBy;
+import static java.util.stream.Collectors.toUnmodifiableList;
 import static org.junit.platform.commons.util.ExceptionUtils.readStackTrace;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import org.jspecify.annotations.Nullable;
 import org.junit.platform.commons.logging.Logger;
 import org.junit.platform.commons.logging.LoggerFactory;
 import org.junit.platform.commons.util.Preconditions;
@@ -35,27 +35,34 @@ import org.junit.platform.engine.support.descriptor.MethodSource;
  */
 class DiscoveryIssueNotifier {
 
-	static final DiscoveryIssueNotifier NO_ISSUES = new DiscoveryIssueNotifier(emptyList(), emptyList(), emptyList());
+	static final DiscoveryIssueNotifier NO_ISSUES = new DiscoveryIssueNotifier(List.of(), List.of(), List.of());
 	private static final Logger logger = LoggerFactory.getLogger(DiscoveryIssueNotifier.class);
 
 	private final List<DiscoveryIssue> allIssues;
 	private final List<DiscoveryIssue> criticalIssues;
 	private final List<DiscoveryIssue> nonCriticalIssues;
 
+	@SuppressWarnings("NullAway")
 	static DiscoveryIssueNotifier from(Severity criticalSeverity, List<DiscoveryIssue> issues) {
-		Map<Boolean, List<DiscoveryIssue>> issuesByCriticality = issues.stream() //
-				.sorted(comparing(DiscoveryIssue::severity).reversed()) //
-				.collect(partitioningBy(issue -> issue.severity().compareTo(criticalSeverity) >= 0));
+		var issuesByCriticality = partitionByCriticality(criticalSeverity, issues);
 		List<DiscoveryIssue> criticalIssues = issuesByCriticality.get(true);
 		List<DiscoveryIssue> nonCriticalIssues = issuesByCriticality.get(false);
-		return new DiscoveryIssueNotifier(new ArrayList<>(issues), criticalIssues, nonCriticalIssues);
+		return new DiscoveryIssueNotifier(issues, criticalIssues, nonCriticalIssues);
+	}
+
+	private static Map<Boolean, List<DiscoveryIssue>> partitionByCriticality(Severity criticalSeverity,
+			List<DiscoveryIssue> issues) {
+		return issues.stream() //
+				.sorted(comparing(DiscoveryIssue::severity).reversed()) //
+				.collect(
+					partitioningBy(issue -> issue.severity().compareTo(criticalSeverity) >= 0, toUnmodifiableList()));
 	}
 
 	private DiscoveryIssueNotifier(List<DiscoveryIssue> allIssues, List<DiscoveryIssue> criticalIssues,
 			List<DiscoveryIssue> nonCriticalIssues) {
-		this.allIssues = allIssues;
-		this.criticalIssues = criticalIssues;
-		this.nonCriticalIssues = nonCriticalIssues;
+		this.allIssues = List.copyOf(allIssues);
+		this.criticalIssues = List.copyOf(criticalIssues);
+		this.nonCriticalIssues = List.copyOf(nonCriticalIssues);
 	}
 
 	List<DiscoveryIssue> getAllIssues() {
@@ -74,6 +81,7 @@ class DiscoveryIssueNotifier {
 		logIssues(testEngine, nonCriticalIssues, "non-critical");
 	}
 
+	@Nullable
 	DiscoveryIssueException createExceptionForCriticalIssues(TestEngine testEngine) {
 		if (criticalIssues.isEmpty()) {
 			return null;
@@ -90,17 +98,11 @@ class DiscoveryIssueNotifier {
 	}
 
 	private static Consumer<Supplier<String>> logger(Severity severity) {
-		// TODO [#4246] Use switch expression
-		switch (severity) {
-			case INFO:
-				return logger::info;
-			case WARNING:
-				return logger::warn;
-			case ERROR:
-				return logger::error;
-			default:
-				throw new IllegalArgumentException("Unknown severity: " + severity);
-		}
+		return switch (severity) {
+			case INFO -> logger::info;
+			case WARNING -> logger::warn;
+			case ERROR -> logger::error;
+		};
 	}
 
 	private static String formatMessage(TestEngine testEngine, List<DiscoveryIssue> issues, String adjective) {
@@ -123,12 +125,10 @@ class DiscoveryIssueNotifier {
 				issue.message());
 			issue.source().ifPresent(source -> {
 				message.append("\n    Source: ").append(source);
-				if (source instanceof MethodSource) {
-					MethodSource methodSource = (MethodSource) source;
+				if (source instanceof MethodSource methodSource) {
 					appendIdeCompatibleLink(message, methodSource.getClassName(), methodSource.getMethodName());
 				}
-				else if (source instanceof ClassSource) {
-					ClassSource classSource = (ClassSource) source;
+				else if (source instanceof ClassSource classSource) {
 					appendIdeCompatibleLink(message, classSource.getClassName(), "<no-method>");
 				}
 			});

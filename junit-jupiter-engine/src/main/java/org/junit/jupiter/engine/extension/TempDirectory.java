@@ -12,6 +12,7 @@ package org.junit.jupiter.engine.extension;
 
 import static java.nio.file.FileVisitResult.CONTINUE;
 import static java.nio.file.FileVisitResult.SKIP_SUBTREE;
+import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.joining;
 import static org.junit.jupiter.api.extension.TestInstantiationAwareExtension.ExtensionContextScope.TEST_METHOD;
 import static org.junit.jupiter.api.io.CleanupMode.DEFAULT;
@@ -36,7 +37,6 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.DosFileAttributeView;
@@ -47,6 +47,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.function.Predicate;
 
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.extension.AnnotatedElementContext;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
@@ -59,7 +60,6 @@ import org.junit.jupiter.api.extension.ParameterResolver;
 import org.junit.jupiter.api.io.CleanupMode;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.io.TempDirFactory;
-import org.junit.jupiter.engine.config.EnumConfigurationParameterConverter;
 import org.junit.jupiter.engine.config.JupiterConfiguration;
 import org.junit.platform.commons.JUnitException;
 import org.junit.platform.commons.PreconditionViolationException;
@@ -148,10 +148,8 @@ class TempDirectory implements BeforeAllCallback, BeforeEachCallback, ParameterR
 		}
 	}
 
-	private void injectFields(ExtensionContext context, Object testInstance, Class<?> testClass,
+	private void injectFields(ExtensionContext context, @Nullable Object testInstance, Class<?> testClass,
 			Predicate<Field> predicate) {
-
-		Scope scope = getScope(context);
 
 		findAnnotatedFields(testClass, TempDir.class, predicate).forEach(field -> {
 			assertNonFinalField(field);
@@ -159,9 +157,9 @@ class TempDirectory implements BeforeAllCallback, BeforeEachCallback, ParameterR
 
 			try {
 				CleanupMode cleanupMode = determineCleanupModeForField(field);
-				TempDirFactory factory = determineTempDirFactoryForField(field, scope);
+				TempDirFactory factory = determineTempDirFactoryForField(field);
 				makeAccessible(field).set(testInstance,
-					getPathOrFile(field.getType(), new FieldContext(field), factory, cleanupMode, scope, context));
+					getPathOrFile(field.getType(), new FieldContext(field), factory, cleanupMode, context));
 			}
 			catch (Throwable t) {
 				throw ExceptionUtils.throwAsUncheckedException(t);
@@ -187,9 +185,8 @@ class TempDirectory implements BeforeAllCallback, BeforeEachCallback, ParameterR
 		Class<?> parameterType = parameterContext.getParameter().getType();
 		assertSupportedType("parameter", parameterType);
 		CleanupMode cleanupMode = determineCleanupModeForParameter(parameterContext);
-		Scope scope = getScope(extensionContext);
-		TempDirFactory factory = determineTempDirFactoryForParameter(parameterContext, scope);
-		return getPathOrFile(parameterType, parameterContext, factory, cleanupMode, scope, extensionContext);
+		TempDirFactory factory = determineTempDirFactoryForParameter(parameterContext);
+		return getPathOrFile(parameterType, parameterContext, factory, cleanupMode, extensionContext);
 	}
 
 	private CleanupMode determineCleanupModeForField(Field field) {
@@ -209,37 +206,20 @@ class TempDirectory implements BeforeAllCallback, BeforeEachCallback, ParameterR
 		return cleanupMode == DEFAULT ? this.configuration.getDefaultTempDirCleanupMode() : cleanupMode;
 	}
 
-	@SuppressWarnings("deprecation")
-	private Scope getScope(ExtensionContext context) {
-		return context.getRoot().getStore(NAMESPACE).getOrComputeIfAbsent( //
-			Scope.class, //
-			__ -> new EnumConfigurationParameterConverter<>(Scope.class, "@TempDir scope") //
-					.get(TempDir.SCOPE_PROPERTY_NAME, context::getConfigurationParameter, Scope.PER_DECLARATION), //
-			Scope.class //
-		);
-	}
-
-	private TempDirFactory determineTempDirFactoryForField(Field field, Scope scope) {
+	private TempDirFactory determineTempDirFactoryForField(Field field) {
 		TempDir tempDir = findAnnotation(field, TempDir.class).orElseThrow(
 			() -> new JUnitException("Field " + field + " must be annotated with @TempDir"));
-		return determineTempDirFactory(tempDir, scope);
+		return determineTempDirFactory(tempDir);
 	}
 
-	private TempDirFactory determineTempDirFactoryForParameter(ParameterContext parameterContext, Scope scope) {
+	private TempDirFactory determineTempDirFactoryForParameter(ParameterContext parameterContext) {
 		TempDir tempDir = parameterContext.findAnnotation(TempDir.class).orElseThrow(() -> new JUnitException(
 			"Parameter " + parameterContext.getParameter() + " must be annotated with @TempDir"));
-		return determineTempDirFactory(tempDir, scope);
+		return determineTempDirFactory(tempDir);
 	}
 
-	@SuppressWarnings("deprecation")
-	private TempDirFactory determineTempDirFactory(TempDir tempDir, Scope scope) {
+	private TempDirFactory determineTempDirFactory(TempDir tempDir) {
 		Class<? extends TempDirFactory> factory = tempDir.factory();
-
-		if (factory != TempDirFactory.class && scope == Scope.PER_CONTEXT) {
-			throw new ExtensionConfigurationException("Custom @TempDir factory is not supported with "
-					+ TempDir.SCOPE_PROPERTY_NAME + "=" + Scope.PER_CONTEXT.name().toLowerCase() + ". Use "
-					+ TempDir.DEFAULT_FACTORY_PROPERTY_NAME + " instead.");
-		}
 
 		return factory == TempDirFactory.class //
 				? this.configuration.getDefaultTempDirFactorySupplier().get()
@@ -260,16 +240,13 @@ class TempDirectory implements BeforeAllCallback, BeforeEachCallback, ParameterR
 	}
 
 	private static Object getPathOrFile(Class<?> elementType, AnnotatedElementContext elementContext,
-			TempDirFactory factory, CleanupMode cleanupMode, Scope scope, ExtensionContext extensionContext) {
+			TempDirFactory factory, CleanupMode cleanupMode, ExtensionContext extensionContext) {
 
-		Namespace namespace = scope == Scope.PER_DECLARATION //
-				? NAMESPACE.append(elementContext) //
-				: NAMESPACE;
-		Path path = extensionContext.getStore(namespace) //
+		Path path = requireNonNull(extensionContext.getStore(NAMESPACE.append(elementContext)) //
 				.getOrComputeIfAbsent(KEY,
 					__ -> createTempDir(factory, cleanupMode, elementType, elementContext, extensionContext),
-					CloseablePath.class) //
-				.get();
+					CloseablePath.class)) //
+							.get();
 
 		return (elementType == Path.class) ? path : path.toFile();
 	}
@@ -335,7 +312,7 @@ class TempDirectory implements BeforeAllCallback, BeforeEachCallback, ParameterR
 			try {
 				if (this.cleanupMode == NEVER
 						|| (this.cleanupMode == ON_SUCCESS && selfOrChildFailed(this.extensionContext))) {
-					LOGGER.info(() -> String.format("Skipping cleanup of temp dir %s for %s due to CleanupMode.%s.",
+					LOGGER.info(() -> "Skipping cleanup of temp dir %s for %s due to CleanupMode.%s.".formatted(
 						this.dir, descriptionFor(this.annotatedElement), this.cleanupMode.name()));
 					return;
 				}
@@ -369,12 +346,10 @@ class TempDirectory implements BeforeAllCallback, BeforeEachCallback, ParameterR
 		 * @since 5.12
 		 */
 		private static String descriptionFor(AnnotatedElement annotatedElement) {
-			if (annotatedElement instanceof Field) {
-				Field field = (Field) annotatedElement;
+			if (annotatedElement instanceof Field field) {
 				return "field " + field.getDeclaringClass().getSimpleName() + "." + field.getName();
 			}
-			if (annotatedElement instanceof Parameter) {
-				Parameter parameter = (Parameter) annotatedElement;
+			if (annotatedElement instanceof Parameter parameter) {
 				Executable executable = parameter.getDeclaringExecutable();
 				return "parameter '" + parameter.getName() + "' in " + descriptionFor(executable);
 			}
@@ -388,7 +363,7 @@ class TempDirectory implements BeforeAllCallback, BeforeEachCallback, ParameterR
 			boolean isConstructor = executable instanceof Constructor<?>;
 			String type = isConstructor ? "constructor" : "method";
 			String name = isConstructor ? executable.getDeclaringClass().getSimpleName() : executable.getName();
-			return String.format("%s %s(%s)", type, name,
+			return "%s %s(%s)".formatted(type, name,
 				ClassUtils.nullSafeToString(Class::getSimpleName, executable.getParameterTypes()));
 		}
 
@@ -538,7 +513,7 @@ class TempDirectory implements BeforeAllCallback, BeforeEachCallback, ParameterR
 		}
 
 		private IOException createIOExceptionWithAttachedFailures(SortedMap<Path, IOException> failures) {
-			Path emptyPath = Paths.get("");
+			Path emptyPath = Path.of("");
 			String joinedPaths = failures.keySet().stream() //
 					.map(this::tryToDeleteOnExit) //
 					.map(this::relativizeSafely) //
@@ -570,14 +545,6 @@ class TempDirectory implements BeforeAllCallback, BeforeEachCallback, ParameterR
 		}
 	}
 
-	enum Scope {
-
-		PER_CONTEXT,
-
-		PER_DECLARATION
-
-	}
-
 	interface FileOperations {
 
 		FileOperations DEFAULT = Files::delete;
@@ -586,9 +553,7 @@ class TempDirectory implements BeforeAllCallback, BeforeEachCallback, ParameterR
 
 	}
 
-	private static class FieldContext implements AnnotatedElementContext {
-
-		private final Field field;
+	private record FieldContext(Field field) implements AnnotatedElementContext {
 
 		private FieldContext(Field field) {
 			this.field = Preconditions.notNull(field, "field must not be null");
@@ -611,15 +576,8 @@ class TempDirectory implements BeforeAllCallback, BeforeEachCallback, ParameterR
 	}
 
 	@SuppressWarnings("deprecation")
-	private static class FailureTracker implements Store.CloseableResource, AutoCloseable {
-
-		private final ExtensionContext context;
-		private final ExtensionContext parentContext;
-
-		private FailureTracker(ExtensionContext context, ExtensionContext parentContext) {
-			this.context = context;
-			this.parentContext = parentContext;
-		}
+	private record FailureTracker(ExtensionContext context, ExtensionContext parentContext)
+			implements Store.CloseableResource, AutoCloseable {
 
 		@Override
 		public void close() {

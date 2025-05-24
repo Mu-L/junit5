@@ -12,14 +12,13 @@ package org.junit.platform.engine;
 
 import static org.apiguardian.api.API.Status.STABLE;
 
+import java.io.Serial;
 import java.io.Serializable;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
 import org.apiguardian.api.API;
+import org.jspecify.annotations.Nullable;
 import org.junit.platform.commons.PreconditionViolationException;
 import org.junit.platform.commons.util.Preconditions;
 import org.junit.platform.commons.util.StringUtils;
@@ -35,6 +34,7 @@ import org.junit.platform.commons.util.StringUtils;
 @API(status = STABLE, since = "1.0")
 public final class TestTag implements Serializable {
 
+	@Serial
 	private static final long serialVersionUID = 1L;
 
 	private final String name;
@@ -51,8 +51,7 @@ public final class TestTag implements Serializable {
 	 * <li>{@code !}: <em>exclamation point</em></li>
 	 * </ul>
 	 */
-	public static final Set<String> RESERVED_CHARACTERS = Collections.unmodifiableSet(
-		new HashSet<>(Arrays.asList(",", "(", ")", "&", "|", "!")));
+	public static final Set<String> RESERVED_CHARACTERS = Set.of(",", "(", ")", "&", "|", "!");
 
 	/**
 	 * Determine if the supplied tag name is valid with regard to the supported
@@ -82,7 +81,7 @@ public final class TestTag implements Serializable {
 	 * @see #RESERVED_CHARACTERS
 	 * @see TestTag#create(String)
 	 */
-	public static boolean isValid(String name) {
+	public static boolean isValid(@Nullable String name) {
 		if (name == null) {
 			return false;
 		}
@@ -118,7 +117,7 @@ public final class TestTag implements Serializable {
 
 	private TestTag(String name) {
 		Preconditions.condition(TestTag.isValid(name),
-			() -> String.format("Tag name [%s] must be syntactically valid", name));
+			() -> "Tag name [%s] must be syntactically valid".formatted(name));
 		this.name = name.trim();
 	}
 
@@ -133,8 +132,7 @@ public final class TestTag implements Serializable {
 
 	@Override
 	public boolean equals(Object obj) {
-		if (obj instanceof TestTag) {
-			TestTag that = (TestTag) obj;
+		if (obj instanceof TestTag that) {
 			return Objects.equals(this.name, that.name);
 		}
 		return false;

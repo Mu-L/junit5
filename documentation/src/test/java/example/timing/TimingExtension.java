@@ -36,18 +36,21 @@ public class TimingExtension implements BeforeTestExecutionCallback, AfterTestEx
 	private static final String START_TIME = "start time";
 
 	@Override
-	public void beforeTestExecution(ExtensionContext context) throws Exception {
+	public void beforeTestExecution(ExtensionContext context) {
 		getStore(context).put(START_TIME, System.currentTimeMillis());
 	}
 
+	//end::user_guide[]
+	@SuppressWarnings({ "DataFlowIssue", "NullAway" })
+	//tag::user_guide[]
 	@Override
-	public void afterTestExecution(ExtensionContext context) throws Exception {
+	public void afterTestExecution(ExtensionContext context) {
 		Method testMethod = context.getRequiredTestMethod();
 		long startTime = getStore(context).remove(START_TIME, long.class);
 		long duration = System.currentTimeMillis() - startTime;
 
 		logger.info(() ->
-			String.format("Method [%s] took %s ms.", testMethod.getName(), duration));
+			"Method [%s] took %s ms.".formatted(testMethod.getName(), duration));
 	}
 
 	private Store getStore(ExtensionContext context) {

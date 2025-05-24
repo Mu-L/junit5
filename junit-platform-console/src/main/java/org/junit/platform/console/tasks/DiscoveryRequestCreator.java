@@ -82,12 +82,14 @@ class DiscoveryRequestCreator {
 	}
 
 	private static Set<Path> determineClasspathRoots(TestDiscoveryOptions options) {
-		if (options.getSelectedClasspathEntries().isEmpty()) {
+		var selectedClasspathEntries = Preconditions.notNull(options.getSelectedClasspathEntries(),
+			() -> "No classpath entries selected");
+		if (selectedClasspathEntries.isEmpty()) {
 			Set<Path> rootDirs = new LinkedHashSet<>(ReflectionUtils.getAllClasspathRootDirectories());
 			rootDirs.addAll(options.getExistingAdditionalClasspathEntries());
 			return rootDirs;
 		}
-		return new LinkedHashSet<>(options.getSelectedClasspathEntries());
+		return new LinkedHashSet<>(selectedClasspathEntries);
 	}
 
 	private static void addFilters(LauncherDiscoveryRequestBuilder requestBuilder, TestDiscoveryOptions options,
@@ -137,15 +139,15 @@ class DiscoveryRequestCreator {
 		Stream<String> patternStreams = Stream.concat( //
 			options.getIncludedClassNamePatterns().stream(), //
 			selectors.stream() //
-					.map(selector -> selector instanceof IterationSelector
-							? ((IterationSelector) selector).getParentSelector()
+					.map(selector -> selector instanceof IterationSelector iterationSelector
+							? iterationSelector.getParentSelector()
 							: selector) //
 					.map(selector -> {
-						if (selector instanceof ClassSelector) {
-							return ((ClassSelector) selector).getClassName();
+						if (selector instanceof ClassSelector classSelector) {
+							return classSelector.getClassName();
 						}
-						if (selector instanceof MethodSelector) {
-							return ((MethodSelector) selector).getClassName();
+						if (selector instanceof MethodSelector methodSelector) {
+							return methodSelector.getClassName();
 						}
 						return null;
 					}) //

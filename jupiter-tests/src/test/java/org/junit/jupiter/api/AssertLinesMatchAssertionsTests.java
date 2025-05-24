@@ -27,7 +27,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -95,7 +94,7 @@ class AssertLinesMatchAssertionsTests {
 	}
 
 	@Test
-	@SuppressWarnings({ "unchecked", "rawtypes" })
+	@SuppressWarnings({ "unchecked", "rawtypes", "DataFlowIssue", "NullAway" })
 	void assertLinesMatchWithNullFails() {
 		assertThrows(PreconditionViolationException.class, () -> assertLinesMatch(null, (List) null));
 		assertThrows(PreconditionViolationException.class, () -> assertLinesMatch(null, Collections.emptyList()));
@@ -242,8 +241,8 @@ class AssertLinesMatchAssertionsTests {
 
 	@Test
 	void largeListsThatDoNotMatchAreTruncated() {
-		var expected = IntStream.range(1, 999).boxed().map(Object::toString).collect(Collectors.toList());
-		var actual = IntStream.range(0, 1000).boxed().map(Object::toString).collect(Collectors.toList());
+		var expected = IntStream.range(1, 999).boxed().map(Object::toString).toList();
+		var actual = IntStream.range(0, 1000).boxed().map(Object::toString).toList();
 		var error = assertThrows(AssertionFailedError.class,
 			() -> assertLinesMatch(expected, actual, "custom message"));
 		var expectedMessage = String.join(System.lineSeparator(), List.of( //

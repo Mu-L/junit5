@@ -13,7 +13,6 @@ package org.junit.platform.console.options;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
-import static java.util.stream.Collectors.toList;
 import static org.apiguardian.api.API.Status.INTERNAL;
 import static org.junit.platform.engine.discovery.ClassNameFilter.STANDARD_INCLUDE_PATTERN;
 
@@ -24,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apiguardian.api.API;
+import org.jspecify.annotations.Nullable;
 import org.junit.platform.engine.DiscoverySelector;
 import org.junit.platform.engine.DiscoverySelectorIdentifier;
 import org.junit.platform.engine.discovery.ClassSelector;
@@ -46,6 +46,8 @@ public class TestDiscoveryOptions {
 
 	private boolean scanClasspath;
 	private List<Path> additionalClasspathEntries = emptyList();
+
+	@Nullable
 	private List<Path> selectedClasspathEntries = emptyList();
 
 	private boolean scanModulepath;
@@ -93,7 +95,7 @@ public class TestDiscoveryOptions {
 	}
 
 	public List<Path> getExistingAdditionalClasspathEntries() {
-		return this.additionalClasspathEntries.stream().filter(Files::exists).collect(toList());
+		return this.additionalClasspathEntries.stream().filter(Files::exists).toList();
 	}
 
 	public List<Path> getAdditionalClasspathEntries() {
@@ -104,11 +106,11 @@ public class TestDiscoveryOptions {
 		this.additionalClasspathEntries = additionalClasspathEntries;
 	}
 
-	public List<Path> getSelectedClasspathEntries() {
+	public @Nullable List<Path> getSelectedClasspathEntries() {
 		return this.selectedClasspathEntries;
 	}
 
-	public void setSelectedClasspathEntries(List<Path> selectedClasspathEntries) {
+	public void setSelectedClasspathEntries(@Nullable List<Path> selectedClasspathEntries) {
 		this.selectedClasspathEntries = selectedClasspathEntries;
 	}
 

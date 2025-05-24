@@ -20,12 +20,13 @@ import java.net.URISyntaxException;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+
+import org.jspecify.annotations.Nullable;
 
 /**
  * @since 1.0
@@ -65,7 +66,7 @@ final class CloseablePath implements Closeable {
 			return createForJarFileSystem(new URI(JAR_URI_SCHEME + ':' + uri),
 				fileSystem -> fileSystem.getRootDirectories().iterator().next(), fileSystemProvider);
 		}
-		return new CloseablePath(Paths.get(uri), NULL_CLOSEABLE);
+		return new CloseablePath(Path.of(uri), NULL_CLOSEABLE);
 	}
 
 	private static CloseablePath createForJarFileSystem(URI jarUri, Function<FileSystem, Path> pathProvider,
@@ -114,7 +115,7 @@ final class CloseablePath implements Closeable {
 			return this;
 		}
 
-		private ManagedFileSystem release() {
+		private @Nullable ManagedFileSystem release() {
 			if (referenceCount.decrementAndGet() == 0) {
 				close();
 				return null;

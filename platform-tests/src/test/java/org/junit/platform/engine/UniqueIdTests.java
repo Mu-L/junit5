@@ -61,7 +61,7 @@ class UniqueIdTests {
 			var uniqueIdWithEngine = UniqueId.forEngine(ENGINE_ID);
 			assertThat(uniqueIdWithEngine.getEngineId()).contains("junit-jupiter");
 
-			var uniqueIdWithoutEngine = UniqueId.root("root", "avalue");
+			var uniqueIdWithoutEngine = UniqueId.root("root", "aValue");
 			assertEquals(Optional.empty(), uniqueIdWithoutEngine.getEngineId());
 		}
 
@@ -123,6 +123,7 @@ class UniqueIdTests {
 			assertSegment(uniqueId.getSegments().get(2), "t2", "v2");
 		}
 
+		@SuppressWarnings({ "DataFlowIssue", "NullAway" })
 		@Test
 		void appendingNullIsNotAllowed() {
 			var uniqueId = UniqueId.forEngine(ENGINE_ID);
@@ -229,6 +230,7 @@ class UniqueIdTests {
 	@Nested
 	class Prefixing {
 
+		@SuppressWarnings({ "DataFlowIssue", "NullAway" })
 		@Test
 		void nullIsNotAPrefix() {
 			var id = UniqueId.forEngine(ENGINE_ID);

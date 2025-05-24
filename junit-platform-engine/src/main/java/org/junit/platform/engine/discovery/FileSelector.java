@@ -17,11 +17,11 @@ import java.io.File;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Objects;
 import java.util.Optional;
 
 import org.apiguardian.api.API;
+import org.jspecify.annotations.Nullable;
 import org.junit.platform.commons.util.StringUtils;
 import org.junit.platform.commons.util.ToStringBuilder;
 import org.junit.platform.engine.DiscoverySelector;
@@ -45,9 +45,11 @@ import org.junit.platform.engine.DiscoverySelectorIdentifier;
 public class FileSelector implements DiscoverySelector {
 
 	private final String path;
+
+	@Nullable
 	private final FilePosition position;
 
-	FileSelector(String path, FilePosition position) {
+	FileSelector(String path, @Nullable FilePosition position) {
 		this.path = path;
 		this.position = position;
 	}
@@ -70,7 +72,7 @@ public class FileSelector implements DiscoverySelector {
 	 * @see #getRawPath()
 	 */
 	public Path getPath() {
-		return Paths.get(this.path);
+		return Path.of(this.path);
 	}
 
 	/**
@@ -127,7 +129,7 @@ public class FileSelector implements DiscoverySelector {
 		}
 		else {
 			return Optional.of(DiscoverySelectorIdentifier.create(IdentifierParser.PREFIX,
-				String.format("%s?%s", this.path, this.position.toQueryPart())));
+				"%s?%s".formatted(this.path, this.position.toQueryPart())));
 		}
 	}
 

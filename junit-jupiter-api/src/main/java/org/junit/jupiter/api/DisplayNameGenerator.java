@@ -17,6 +17,8 @@ import static org.apiguardian.api.API.Status.INTERNAL;
 import static org.apiguardian.api.API.Status.STABLE;
 import static org.junit.platform.commons.support.AnnotationSupport.findAnnotation;
 import static org.junit.platform.commons.support.ModifierSupport.isStatic;
+import static org.junit.platform.commons.util.KotlinReflectionUtils.getKotlinSuspendingFunctionParameterTypes;
+import static org.junit.platform.commons.util.KotlinReflectionUtils.isKotlinSuspendingFunction;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -29,6 +31,7 @@ import java.util.Optional;
 import java.util.function.Predicate;
 
 import org.apiguardian.api.API;
+import org.jspecify.annotations.Nullable;
 import org.junit.platform.commons.support.ReflectionSupport;
 import org.junit.platform.commons.util.ClassUtils;
 import org.junit.platform.commons.util.Preconditions;
@@ -195,7 +198,10 @@ public interface DisplayNameGenerator {
 	 */
 	static String parameterTypesAsString(Method method) {
 		Preconditions.notNull(method, "Method must not be null");
-		return '(' + ClassUtils.nullSafeToString(Class::getSimpleName, method.getParameterTypes()) + ')';
+		var parameterTypes = isKotlinSuspendingFunction(method) //
+				? getKotlinSuspendingFunctionParameterTypes(method) //
+				: method.getParameterTypes();
+		return '(' + ClassUtils.nullSafeToString(Class::getSimpleName, parameterTypes) + ')';
 	}
 
 	/**
@@ -381,14 +387,13 @@ public interface DisplayNameGenerator {
 		private String getSentenceBeginning(Class<?> testClass, List<Class<?>> enclosingInstanceTypes) {
 			Class<?> enclosingClass = enclosingInstanceTypes.isEmpty() ? null
 					: enclosingInstanceTypes.get(enclosingInstanceTypes.size() - 1);
-			boolean topLevelTestClass = (enclosingClass == null || isStatic(testClass));
 
 			String sentenceFragment = findAnnotation(testClass, DisplayName.class)//
 					.map(DisplayName::value)//
 					.map(String::trim)//
 					.orElseGet(() -> getSentenceFragment(testClass));
 
-			if (topLevelTestClass) {
+			if (enclosingClass == null || isStatic(testClass)) { // top-level class
 				if (sentenceFragment != null) {
 					return sentenceFragment;
 				}
@@ -496,12 +501,12 @@ public interface DisplayNameGenerator {
 			return findAnnotation(testClass, IndicativeSentencesGeneration.class, enclosingInstanceTypes);
 		}
 
-		private static String getSentenceFragment(AnnotatedElement element) {
+		private static @Nullable String getSentenceFragment(AnnotatedElement element) {
 			return findAnnotation(element, SentenceFragment.class) //
 					.map(SentenceFragment::value) //
 					.map(sentenceFragment -> {
-						Preconditions.notBlank(sentenceFragment, String.format(
-							"@SentenceFragment on [%s] must be declared with a non-blank value.", element));
+						Preconditions.notBlank(sentenceFragment,
+							"@SentenceFragment on [%s] must be declared with a non-blank value.".formatted(element));
 						return sentenceFragment.trim();
 					}) //
 					.orElse(null);

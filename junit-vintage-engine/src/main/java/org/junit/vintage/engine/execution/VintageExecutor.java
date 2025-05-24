@@ -10,7 +10,7 @@
 
 package org.junit.vintage.engine.execution;
 
-import static java.util.stream.Collectors.toList;
+import static java.util.Objects.requireNonNullElse;
 import static org.apiguardian.api.API.Status.INTERNAL;
 import static org.junit.vintage.engine.Constants.PARALLEL_CLASS_EXECUTION;
 import static org.junit.vintage.engine.Constants.PARALLEL_EXECUTION_ENABLED;
@@ -130,7 +130,7 @@ public class VintageExecutor {
 		return engineDescriptor.getModifiableChildren().stream() //
 				.map(RunnerTestDescriptor.class::cast) //
 				.map(it -> methods ? parallelMethodExecutor(it, executorService) : it) //
-				.collect(toList());
+				.toList();
 	}
 
 	private RunnerTestDescriptor parallelMethodExecutor(RunnerTestDescriptor runnerTestDescriptor,
@@ -165,7 +165,7 @@ public class VintageExecutor {
 			wasInterrupted = true;
 		}
 		catch (ExecutionException e) {
-			throw ExceptionUtils.throwAsUncheckedException(e.getCause());
+			throw ExceptionUtils.throwAsUncheckedException(requireNonNullElse(e.getCause(), e));
 		}
 		finally {
 			shutdownExecutorService(executorService);

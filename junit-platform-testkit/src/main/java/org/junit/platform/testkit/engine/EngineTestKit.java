@@ -12,7 +12,6 @@ package org.junit.platform.testkit.engine;
 
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singleton;
-import static org.apiguardian.api.API.Status.DEPRECATED;
 import static org.apiguardian.api.API.Status.EXPERIMENTAL;
 import static org.apiguardian.api.API.Status.MAINTAINED;
 import static org.apiguardian.api.API.Status.STABLE;
@@ -26,6 +25,7 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import org.apiguardian.api.API;
+import org.jspecify.annotations.Nullable;
 import org.junit.platform.commons.JUnitException;
 import org.junit.platform.commons.PreconditionViolationException;
 import org.junit.platform.commons.util.CollectionUtils;
@@ -33,13 +33,10 @@ import org.junit.platform.commons.util.Preconditions;
 import org.junit.platform.engine.DiscoveryFilter;
 import org.junit.platform.engine.DiscoveryIssue;
 import org.junit.platform.engine.DiscoverySelector;
-import org.junit.platform.engine.EngineDiscoveryRequest;
 import org.junit.platform.engine.EngineExecutionListener;
-import org.junit.platform.engine.ExecutionRequest;
 import org.junit.platform.engine.Filter;
 import org.junit.platform.engine.TestDescriptor;
 import org.junit.platform.engine.TestEngine;
-import org.junit.platform.engine.UniqueId;
 import org.junit.platform.engine.reporting.OutputDirectoryProvider;
 import org.junit.platform.engine.support.store.Namespace;
 import org.junit.platform.engine.support.store.NamespacedHierarchicalStore;
@@ -195,42 +192,6 @@ public final class EngineTestKit {
 	}
 
 	/**
-	 * Execute tests for the given {@link EngineDiscoveryRequest} using the
-	 * {@link TestEngine} with the supplied ID.
-	 *
-	 * <p>The {@code TestEngine} will be loaded via Java's {@link ServiceLoader}
-	 * mechanism, analogous to the manner in which test engines are loaded in
-	 * the JUnit Platform Launcher API.
-	 *
-	 * <p>Note that {@link org.junit.platform.launcher.LauncherDiscoveryRequest}
-	 * from the {@code junit-platform-launcher} module is a subtype of
-	 * {@code EngineDiscoveryRequest}. It is therefore quite convenient to make
-	 * use of the DSL provided in
-	 * {@link org.junit.platform.launcher.core.LauncherDiscoveryRequestBuilder}
-	 * to build an appropriate discovery request to supply to this method. As
-	 * an alternative, consider using {@link #engine(String)} for a more fluent
-	 * API.
-	 *
-	 * @param engineId the ID of the {@code TestEngine} to use; must not be
-	 * {@code null} or <em>blank</em>
-	 * @param discoveryRequest the {@code EngineDiscoveryRequest} to use
-	 * @return the results of the execution
-	 * @throws PreconditionViolationException for invalid arguments or if the
-	 * {@code TestEngine} with the supplied ID cannot be loaded
-	 * @see #execute(String, LauncherDiscoveryRequest)
-	 * @see #engine(String)
-	 * @see #engine(TestEngine)
-	 * @deprecated Please use {@link #execute(String, LauncherDiscoveryRequest)}
-	 * instead.
-	 */
-	@Deprecated
-	@API(status = DEPRECATED, since = "1.7")
-	public static EngineExecutionResults execute(String engineId, EngineDiscoveryRequest discoveryRequest) {
-		Preconditions.notBlank(engineId, "TestEngine ID must not be null or blank");
-		return execute(loadTestEngine(engineId.trim()), discoveryRequest);
-	}
-
-	/**
 	 * Execute tests for the given {@link LauncherDiscoveryRequest} using the
 	 * {@link TestEngine} with the supplied ID.
 	 *
@@ -257,41 +218,6 @@ public final class EngineTestKit {
 	public static EngineExecutionResults execute(String engineId, LauncherDiscoveryRequest discoveryRequest) {
 		Preconditions.notBlank(engineId, "TestEngine ID must not be null or blank");
 		return execute(loadTestEngine(engineId.trim()), discoveryRequest);
-	}
-
-	/**
-	 * Execute tests for the given {@link EngineDiscoveryRequest} using the
-	 * supplied {@link TestEngine}.
-	 *
-	 * <p>Note that {@link org.junit.platform.launcher.LauncherDiscoveryRequest}
-	 * from the {@code junit-platform-launcher} module is a subtype of
-	 * {@code EngineDiscoveryRequest}. It is therefore quite convenient to make
-	 * use of the DSL provided in
-	 * {@link org.junit.platform.launcher.core.LauncherDiscoveryRequestBuilder}
-	 * to build an appropriate discovery request to supply to this method. As
-	 * an alternative, consider using {@link #engine(TestEngine)} for a more fluent
-	 * API.
-	 *
-	 * @param testEngine the {@code TestEngine} to use; must not be {@code null}
-	 * @param discoveryRequest the {@code EngineDiscoveryRequest} to use; must
-	 * not be {@code null}
-	 * @return the recorded {@code EngineExecutionResults}
-	 * @throws PreconditionViolationException for invalid arguments
-	 * @see #execute(TestEngine, LauncherDiscoveryRequest)
-	 * @see #engine(String)
-	 * @see #engine(TestEngine)
-	 * @deprecated Please use {@link #execute(TestEngine, LauncherDiscoveryRequest)}
-	 * instead.
-	 */
-	@Deprecated
-	@API(status = DEPRECATED, since = "1.7")
-	public static EngineExecutionResults execute(TestEngine testEngine, EngineDiscoveryRequest discoveryRequest) {
-		Preconditions.notNull(testEngine, "TestEngine must not be null");
-		Preconditions.notNull(discoveryRequest, "EngineDiscoveryRequest must not be null");
-
-		ExecutionRecorder executionRecorder = new ExecutionRecorder();
-		executeDirectly(testEngine, discoveryRequest, executionRecorder);
-		return executionRecorder.getExecutionResults();
 	}
 
 	/**
@@ -322,17 +248,6 @@ public final class EngineTestKit {
 		return executionRecorder.getExecutionResults();
 	}
 
-	private static void executeDirectly(TestEngine testEngine, EngineDiscoveryRequest discoveryRequest,
-			EngineExecutionListener listener) {
-		UniqueId engineUniqueId = UniqueId.forEngine(testEngine.getId());
-		TestDescriptor engineTestDescriptor = testEngine.discover(discoveryRequest, engineUniqueId);
-		withRequestLevelStore(store -> {
-			ExecutionRequest request = ExecutionRequest.create(engineTestDescriptor, listener,
-				discoveryRequest.getConfigurationParameters(), discoveryRequest.getOutputDirectoryProvider(), store);
-			testEngine.execute(request);
-		});
-	}
-
 	private static void executeUsingLauncherOrchestration(TestEngine testEngine,
 			LauncherDiscoveryRequest discoveryRequest, EngineExecutionListener listener) {
 		LauncherDiscoveryResult discoveryResult = discoverUsingOrchestrator(testEngine, discoveryRequest);
@@ -348,7 +263,8 @@ public final class EngineTestKit {
 		}
 	}
 
-	private static NamespacedHierarchicalStore<Namespace> newStore(NamespacedHierarchicalStore<Namespace> parentStore) {
+	private static NamespacedHierarchicalStore<Namespace> newStore(
+			@Nullable NamespacedHierarchicalStore<Namespace> parentStore) {
 		return new NamespacedHierarchicalStore<>(parentStore, closeAutoCloseables());
 	}
 
@@ -365,7 +281,7 @@ public final class EngineTestKit {
 				.filter((TestEngine engine) -> engineId.equals(engine.getId()))//
 				.findFirst()//
 				.orElseThrow(() -> new PreconditionViolationException(
-					String.format("Failed to load TestEngine with ID [%s]", engineId)));
+					"Failed to load TestEngine with ID [%s]".formatted(engineId)));
 	}
 
 	private EngineTestKit() {
@@ -413,29 +329,6 @@ public final class EngineTestKit {
 		 */
 		public Builder selectors(DiscoverySelector... selectors) {
 			this.requestBuilder.selectors(selectors);
-			return this;
-		}
-
-		/**
-		 * Add all of the supplied {@linkplain DiscoveryFilter discovery filters}.
-		 *
-		 * <p>Built-in discovery filters can be created via the static factory
-		 * methods in {@link org.junit.platform.engine.discovery.ClassNameFilter}
-		 * and {@link org.junit.platform.engine.discovery.PackageNameFilter}.
-		 *
-		 * @param filters the discovery filters to add; never {@code null}
-		 * @return this builder for method chaining
-		 * @see #filters(Filter...)
-		 * @see #selectors(DiscoverySelector...)
-		 * @see #configurationParameter(String, String)
-		 * @see #configurationParameters(Map)
-		 * @see #execute()
-		 * @deprecated Please use {@link #filters(Filter...)} instead.
-		 */
-		@Deprecated
-		@API(status = DEPRECATED, since = "1.7")
-		public Builder filters(DiscoveryFilter<?>... filters) {
-			this.requestBuilder.filters(filters);
 			return this;
 		}
 

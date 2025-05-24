@@ -59,8 +59,7 @@ class MethodSelectorResolver implements SelectorResolver {
 
 	private Optional<RunnerTestDescriptor> addFilter(TestDescriptor parent,
 			Function<RunnerTestDescriptor, Filter> filterCreator) {
-		if (parent instanceof RunnerTestDescriptor) {
-			RunnerTestDescriptor runnerTestDescriptor = (RunnerTestDescriptor) parent;
+		if (parent instanceof RunnerTestDescriptor runnerTestDescriptor) {
 			runnerTestDescriptor.getFilters().ifPresent(
 				filters -> filters.add(filterCreator.apply(runnerTestDescriptor)));
 			return Optional.of(runnerTestDescriptor);
@@ -108,12 +107,12 @@ class MethodSelectorResolver implements SelectorResolver {
 
 			private boolean isParameterizedMethod(Description description) {
 				String methodName = DescriptionUtils.getMethodName(description);
-				return methodName.startsWith(desiredMethodName + "[");
+				return methodName != null && methodName.startsWith(desiredMethodName + "[");
 			}
 
 			@Override
 			public String describe() {
-				return String.format("Method %s", desiredDescription.getDisplayName());
+				return "Method %s".formatted(desiredDescription.getDisplayName());
 			}
 		};
 	}

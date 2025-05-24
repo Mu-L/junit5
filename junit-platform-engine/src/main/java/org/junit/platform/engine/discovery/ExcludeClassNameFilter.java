@@ -41,21 +41,21 @@ class ExcludeClassNameFilter extends AbstractClassNameFilter {
 	}
 
 	private String formatInclusionReason(String className) {
-		return String.format("Class name [%s] does not match any excluded pattern: %s", className, patternDescription);
+		return "Class name [%s] does not match any excluded pattern: %s".formatted(className, patternDescription);
 	}
 
 	private String formatExclusionReason(String className, Pattern pattern) {
-		return String.format("Class name [%s] matches excluded pattern: '%s'", className, pattern);
+		return "Class name [%s] matches excluded pattern: '%s'".formatted(className, pattern);
 	}
 
 	@Override
 	public Predicate<String> toPredicate() {
-		return className -> !findMatchingPattern(className).isPresent();
+		return className -> findMatchingPattern(className).isEmpty();
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s that excludes class names that match one of the following regular expressions: %s",
+		return "%s that excludes class names that match one of the following regular expressions: %s".formatted(
 			getClass().getSimpleName(), this.patternDescription);
 	}
 

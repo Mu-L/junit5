@@ -10,7 +10,6 @@
 
 package org.junit.jupiter.api.extension;
 
-import static java.util.Collections.unmodifiableList;
 import static org.apiguardian.api.API.Status.DEPRECATED;
 import static org.apiguardian.api.API.Status.EXPERIMENTAL;
 import static org.apiguardian.api.API.Status.INTERNAL;
@@ -20,7 +19,6 @@ import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +27,7 @@ import java.util.Set;
 import java.util.function.Function;
 
 import org.apiguardian.api.API;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.function.ThrowingConsumer;
 import org.junit.jupiter.api.parallel.ExecutionMode;
@@ -535,6 +534,7 @@ public interface ExtensionContext {
 		 * @see #get(Object, Class)
 		 * @see #getOrDefault(Object, Class, Object)
 		 */
+		@Nullable
 		Object get(Object key);
 
 		/**
@@ -553,7 +553,7 @@ public interface ExtensionContext {
 		 * @see #get(Object)
 		 * @see #getOrDefault(Object, Class, Object)
 		 */
-		<V> V get(Object key, Class<V> requiredType);
+		<V> @Nullable V get(Object key, Class<V> requiredType);
 
 		/**
 		 * Get the value of the specified required type that is stored under
@@ -570,7 +570,8 @@ public interface ExtensionContext {
 		 * @param requiredType the required type of the value; never {@code null}
 		 * @param defaultValue the default value
 		 * @param <V> the value type
-		 * @return the value; potentially {@code null}
+		 * @return the value; potentially {@code null} if {@code defaultValue}
+		 * is {@code null}
 		 * @since 5.5
 		 * @see #get(Object, Class)
 		 */
@@ -613,6 +614,7 @@ public interface ExtensionContext {
 		 * @see CloseableResource
 		 * @see AutoCloseable
 		 */
+		@SuppressWarnings({ "DataFlowIssue", "NullAway" })
 		@API(status = STABLE, since = "5.1")
 		default <V> V getOrComputeIfAbsent(Class<V> type) {
 			return getOrComputeIfAbsent(type, ReflectionSupport::newInstance, type);
@@ -648,7 +650,7 @@ public interface ExtensionContext {
 		 * @see CloseableResource
 		 * @see AutoCloseable
 		 */
-		<K, V> Object getOrComputeIfAbsent(K key, Function<K, V> defaultCreator);
+		<K, V> @Nullable Object getOrComputeIfAbsent(K key, Function<K, @Nullable V> defaultCreator);
 
 		/**
 		 * Get the value of the specified required type that is stored under the
@@ -679,7 +681,7 @@ public interface ExtensionContext {
 		 * @see CloseableResource
 		 * @see AutoCloseable
 		 */
-		<K, V> V getOrComputeIfAbsent(K key, Function<K, V> defaultCreator, Class<V> requiredType);
+		<K, V> @Nullable V getOrComputeIfAbsent(K key, Function<K, @Nullable V> defaultCreator, Class<V> requiredType);
 
 		/**
 		 * Store a {@code value} for later retrieval under the supplied {@code key}.
@@ -700,7 +702,7 @@ public interface ExtensionContext {
 		 * @see CloseableResource
 		 * @see AutoCloseable
 		 */
-		void put(Object key, Object value);
+		void put(Object key, @Nullable Object value);
 
 		/**
 		 * Remove the value that was previously stored under the supplied {@code key}.
@@ -717,6 +719,7 @@ public interface ExtensionContext {
 		 * for the specified key
 		 * @see #remove(Object, Class)
 		 */
+		@Nullable
 		Object remove(Object key);
 
 		/**
@@ -734,7 +737,7 @@ public interface ExtensionContext {
 		 * for the specified key
 		 * @see #remove(Object)
 		 */
-		<V> V remove(Object key, Class<V> requiredType);
+		<V> @Nullable V remove(Object key, Class<V> requiredType);
 
 	}
 
@@ -765,13 +768,13 @@ public interface ExtensionContext {
 		public static Namespace create(Object... parts) {
 			Preconditions.notEmpty(parts, "parts array must not be null or empty");
 			Preconditions.containsNoNullElements(parts, "individual parts must not be null");
-			return new Namespace(new ArrayList<>(Arrays.asList(parts)));
+			return new Namespace(List.of(parts));
 		}
 
 		private final List<Object> parts;
 
 		private Namespace(List<Object> parts) {
-			this.parts = parts;
+			this.parts = List.copyOf(parts);
 		}
 
 		@Override
@@ -810,7 +813,7 @@ public interface ExtensionContext {
 
 		@API(status = INTERNAL, since = "5.13")
 		public List<Object> getParts() {
-			return unmodifiableList(parts);
+			return parts;
 		}
 	}
 

@@ -26,7 +26,7 @@ import static org.junit.platform.engine.discovery.DiscoverySelectors.selectUri;
 
 import java.io.File;
 import java.net.URI;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -73,7 +73,7 @@ class DiscoveryRequestCreatorTests {
 	@Test
 	void convertsScanClasspathOptionWithExplicitRootDirectories() {
 		options.setScanClasspath(true);
-		options.setSelectedClasspathEntries(List.of(Paths.get("."), Paths.get("..")));
+		options.setSelectedClasspathEntries(List.of(Path.of("."), Path.of("..")));
 
 		var request = convert();
 
@@ -87,7 +87,7 @@ class DiscoveryRequestCreatorTests {
 	@Test
 	void convertsScanClasspathOptionWithAdditionalClasspathEntries() {
 		options.setScanClasspath(true);
-		options.setAdditionalClasspathEntries(List.of(Paths.get("."), Paths.get("..")));
+		options.setAdditionalClasspathEntries(List.of(Path.of("."), Path.of("..")));
 
 		var request = convert();
 
@@ -329,7 +329,6 @@ class DiscoveryRequestCreatorTests {
 	}
 
 	@Test
-	@SuppressWarnings("deprecation")
 	void convertsConfigurationParameters() {
 		options.setScanClasspath(true);
 		options.setConfigurationParameters(mapOf(entry("foo", "bar"), entry("baz", "true")));
@@ -337,13 +336,11 @@ class DiscoveryRequestCreatorTests {
 		var request = convert();
 		var configurationParameters = request.getConfigurationParameters();
 
-		assertThat(configurationParameters.size()).isEqualTo(2);
 		assertThat(configurationParameters.get("foo")).contains("bar");
 		assertThat(configurationParameters.getBoolean("baz")).contains(true);
 	}
 
 	@Test
-	@SuppressWarnings("deprecation")
 	void convertsConfigurationParametersResources() {
 		options.setScanClasspath(true);
 		options.setConfigurationParameters(mapOf(entry("foo", "bar"), entry("com.example.prop.first", "baz")));
@@ -352,7 +349,6 @@ class DiscoveryRequestCreatorTests {
 		var request = convert();
 		var configurationParameters = request.getConfigurationParameters();
 
-		assertThat(configurationParameters.size()).isEqualTo(2);
 		assertThat(configurationParameters.get("foo")).contains("bar");
 		assertThat(configurationParameters.get("com.example.prop.first")).contains("baz");
 		assertThat(configurationParameters.get("com.example.prop.second")).contains("second value");

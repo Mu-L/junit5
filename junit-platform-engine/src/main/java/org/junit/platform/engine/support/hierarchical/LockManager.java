@@ -15,7 +15,6 @@ import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
 import static org.junit.platform.commons.util.CollectionUtils.getOnlyElement;
-import static org.junit.platform.commons.util.CollectionUtils.toUnmodifiableList;
 import static org.junit.platform.engine.support.hierarchical.ExclusiveResource.GLOBAL_READ;
 import static org.junit.platform.engine.support.hierarchical.ExclusiveResource.GLOBAL_READ_WRITE;
 import static org.junit.platform.engine.support.hierarchical.ExclusiveResource.LockMode.READ;
@@ -66,19 +65,16 @@ class LockManager {
 
 		return resourcesByKey.values().stream()
 				.map(resourcesWithSameKey -> resourcesWithSameKey.get(0))
-				.collect(toUnmodifiableList());
+				.toList();
 		// @formatter:on
 	}
 
 	private ResourceLock toResourceLock(List<ExclusiveResource> resources) {
-		switch (resources.size()) {
-			case 0:
-				return NopLock.INSTANCE;
-			case 1:
-				return toSingleLock(getOnlyElement(resources));
-			default:
-				return new CompositeLock(resources, toLocks(resources));
-		}
+		return switch (resources.size()) {
+			case 0 -> NopLock.INSTANCE;
+			case 1 -> toSingleLock(getOnlyElement(resources));
+			default -> new CompositeLock(resources, toLocks(resources));
+		};
 	}
 
 	private SingleLock toSingleLock(ExclusiveResource resource) {
@@ -92,7 +88,7 @@ class LockManager {
 	}
 
 	private List<Lock> toLocks(List<ExclusiveResource> resources) {
-		return resources.stream().map(this::toLock).collect(toUnmodifiableList());
+		return resources.stream().map(this::toLock).toList();
 	}
 
 	private Lock toLock(ExclusiveResource resource) {

@@ -30,6 +30,7 @@ import java.util.stream.Stream;
  * @since 5.0
  * @see ExtensionComposabilityTests
  */
+@SuppressWarnings({ "DataFlowIssue", "NullAway" })
 // @formatter:off
 public class KitchenSinkExtension implements
 
@@ -258,12 +259,6 @@ public class KitchenSinkExtension implements
 	public void interceptTestTemplateMethod(Invocation<Void> invocation,
 			ReflectiveInvocationContext<Method> invocationContext, ExtensionContext extensionContext) throws Throwable {
 		InvocationInterceptor.super.interceptTestTemplateMethod(invocation, invocationContext, extensionContext);
-	}
-
-	@SuppressWarnings("deprecation")
-	@Override
-	public void interceptDynamicTest(Invocation<Void> invocation, ExtensionContext extensionContext) throws Throwable {
-		InvocationInterceptor.super.interceptDynamicTest(invocation, extensionContext);
 	}
 
 	@Override

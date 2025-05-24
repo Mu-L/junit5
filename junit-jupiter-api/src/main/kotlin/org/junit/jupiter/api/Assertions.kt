@@ -15,9 +15,8 @@ import org.apiguardian.api.API
 import org.apiguardian.api.API.Status.EXPERIMENTAL
 import org.apiguardian.api.API.Status.STABLE
 import org.junit.jupiter.api.function.Executable
-import org.junit.jupiter.api.function.ThrowingSupplier
+import org.junit.platform.commons.util.UnrecoverableExceptions.rethrowIfUnrecoverable
 import java.time.Duration
-import java.util.function.Supplier
 import java.util.stream.Stream
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.InvocationKind.AT_MOST_ONCE
@@ -43,7 +42,7 @@ fun fail(message: () -> String): Nothing {
         callsInPlace(message, EXACTLY_ONCE)
     }
 
-    return Assertions.fail(message)
+    return Assertions.fail(message())
 }
 
 /**
@@ -334,7 +333,7 @@ inline fun <reified T : Throwable> assertThrows(
                 throw throwable
             }
         },
-        Supplier(message)
+        message
     )
 }
 
@@ -355,7 +354,12 @@ inline fun <R> assertDoesNotThrow(executable: () -> R): R {
         callsInPlace(executable, EXACTLY_ONCE)
     }
 
-    return Assertions.assertDoesNotThrow(evaluateAndWrap(executable))
+    try {
+        return executable()
+    } catch (t: Throwable) {
+        rethrowIfUnrecoverable(t)
+        throw AssertDoesNotThrow.createAssertionFailedError(null, t)
+    }
 }
 
 /**
@@ -402,20 +406,13 @@ inline fun <R> assertDoesNotThrow(
         callsInPlace(message, AT_MOST_ONCE)
     }
 
-    return Assertions.assertDoesNotThrow(
-        evaluateAndWrap(executable),
-        Supplier(message)
-    )
-}
-
-@PublishedApi
-internal inline fun <R> evaluateAndWrap(executable: () -> R): ThrowingSupplier<R> =
     try {
-        val result = executable()
-        ThrowingSupplier { result }
-    } catch (throwable: Throwable) {
-        ThrowingSupplier { throw throwable }
+        return executable()
+    } catch (t: Throwable) {
+        rethrowIfUnrecoverable(t)
+        throw AssertDoesNotThrow.createAssertionFailedError(message(), t)
     }
+}
 
 /**
  * Example usage:
@@ -434,7 +431,7 @@ fun <R> assertTimeout(
     executable: () -> R
 ): R {
     contract {
-        callsInPlace(executable, EXACTLY_ONCE)
+        callsInPlace(executable, AT_MOST_ONCE)
     }
 
     return Assertions.assertTimeout(timeout, executable)
@@ -458,7 +455,7 @@ fun <R> assertTimeout(
     executable: () -> R
 ): R {
     contract {
-        callsInPlace(executable, EXACTLY_ONCE)
+        callsInPlace(executable, AT_MOST_ONCE)
     }
 
     return Assertions.assertTimeout(timeout, executable, message)
@@ -482,7 +479,7 @@ fun <R> assertTimeout(
     executable: () -> R
 ): R {
     contract {
-        callsInPlace(executable, EXACTLY_ONCE)
+        callsInPlace(executable, AT_MOST_ONCE)
         callsInPlace(message, AT_MOST_ONCE)
     }
 

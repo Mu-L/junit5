@@ -10,10 +10,9 @@
 
 package org.junit.platform.engine.support.descriptor;
 
-import static java.util.Collections.unmodifiableList;
 import static org.apiguardian.api.API.Status.STABLE;
 
-import java.util.ArrayList;
+import java.io.Serial;
 import java.util.Collection;
 import java.util.List;
 
@@ -32,6 +31,7 @@ import org.junit.platform.engine.TestSource;
 @API(status = STABLE, since = "1.0")
 public class CompositeTestSource implements TestSource {
 
+	@Serial
 	private static final long serialVersionUID = 1L;
 
 	/**
@@ -55,7 +55,7 @@ public class CompositeTestSource implements TestSource {
 	private CompositeTestSource(Collection<? extends TestSource> sources) {
 		Preconditions.notEmpty(sources, "TestSource collection must not be null or empty");
 		Preconditions.containsNoNullElements(sources, "individual TestSources must not be null");
-		this.sources = unmodifiableList(new ArrayList<>(sources));
+		this.sources = List.copyOf(sources);
 	}
 
 	/**

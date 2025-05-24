@@ -10,7 +10,6 @@
 
 package org.junit.platform.engine.discovery;
 
-import static org.apiguardian.api.API.Status.DEPRECATED;
 import static org.apiguardian.api.API.Status.EXPERIMENTAL;
 import static org.apiguardian.api.API.Status.INTERNAL;
 import static org.apiguardian.api.API.Status.STABLE;
@@ -22,6 +21,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 import org.apiguardian.api.API;
+import org.jspecify.annotations.Nullable;
 import org.junit.platform.commons.PreconditionViolationException;
 import org.junit.platform.commons.util.ReflectionUtils;
 import org.junit.platform.commons.util.ToStringBuilder;
@@ -61,7 +61,7 @@ public class NestedMethodSelector implements DiscoverySelector {
 	private final NestedClassSelector nestedClassSelector;
 	private final MethodSelector methodSelector;
 
-	NestedMethodSelector(ClassLoader classLoader, List<String> enclosingClassNames, String nestedClassName,
+	NestedMethodSelector(@Nullable ClassLoader classLoader, List<String> enclosingClassNames, String nestedClassName,
 			String methodName, String parameterTypeNames) {
 		this.nestedClassSelector = new NestedClassSelector(classLoader, enclosingClassNames, nestedClassName);
 		this.methodSelector = new MethodSelector(classLoader, nestedClassName, methodName, parameterTypeNames);
@@ -70,7 +70,7 @@ public class NestedMethodSelector implements DiscoverySelector {
 	/**
 	 * @since 1.10
 	 */
-	NestedMethodSelector(ClassLoader classLoader, List<String> enclosingClassNames, String nestedClassName,
+	NestedMethodSelector(@Nullable ClassLoader classLoader, List<String> enclosingClassNames, String nestedClassName,
 			String methodName, Class<?>... parameterTypes) {
 		this.nestedClassSelector = new NestedClassSelector(classLoader, enclosingClassNames, nestedClassName);
 		this.methodSelector = new MethodSelector(classLoader, nestedClassName, methodName, parameterTypes);
@@ -102,7 +102,7 @@ public class NestedMethodSelector implements DiscoverySelector {
 	 * @since 1.10
 	 */
 	@API(status = EXPERIMENTAL, since = "1.10")
-	public ClassLoader getClassLoader() {
+	public @Nullable ClassLoader getClassLoader() {
 		return this.nestedClassSelector.getClassLoader();
 	}
 
@@ -162,23 +162,6 @@ public class NestedMethodSelector implements DiscoverySelector {
 	 */
 	public Method getMethod() {
 		return this.methodSelector.getJavaMethod();
-	}
-
-	/**
-	 * Get the names of parameter types for the selected method.
-	 *
-	 * <p>See {@link #getParameterTypeNames()} for details.
-	 *
-	 * @return the names of parameter types
-	 * @since 1.6
-	 * @see #getParameterTypeNames()
-	 * @see #getParameterTypes()
-	 * @deprecated since 1.10 in favor or {@link #getParameterTypeNames()}
-	 */
-	@Deprecated
-	@API(status = DEPRECATED, since = "1.10")
-	public String getMethodParameterTypes() {
-		return getParameterTypeNames();
 	}
 
 	/**

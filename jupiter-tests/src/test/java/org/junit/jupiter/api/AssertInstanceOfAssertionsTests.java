@@ -17,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.IOException;
 
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.function.Executable;
 import org.opentest4j.AssertionFailedError;
 
@@ -91,9 +92,9 @@ class AssertInstanceOfAssertionsTests {
 		assertSame(res, actualValue);
 	}
 
-	private void assertInstanceOfFails(Class<?> expectedType, Object actualValue, String unexpectedSort) {
+	private void assertInstanceOfFails(Class<?> expectedType, @Nullable Object actualValue, String unexpectedSort) {
 		String valueType = actualValue == null ? "null" : actualValue.getClass().getCanonicalName();
-		String expectedMessage = String.format("Unexpected %s, expected: <%s> but was: <%s>", unexpectedSort,
+		String expectedMessage = "Unexpected %s, expected: <%s> but was: <%s>".formatted(unexpectedSort,
 			expectedType.getCanonicalName(), valueType);
 
 		assertThrowsWithMessage(expectedMessage, () -> assertInstanceOf(expectedType, actualValue));

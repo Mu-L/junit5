@@ -21,6 +21,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.apiguardian.api.API;
+import org.jspecify.annotations.Nullable;
 import org.junit.platform.commons.PreconditionViolationException;
 import org.junit.platform.commons.function.Try;
 import org.junit.platform.commons.support.Resource;
@@ -55,10 +56,14 @@ import org.junit.platform.engine.DiscoverySelectorIdentifier;
 public class ClasspathResourceSelector implements DiscoverySelector {
 
 	private final String classpathResourceName;
+
+	@Nullable
 	private final FilePosition position;
+
+	@Nullable
 	private Set<Resource> classpathResources;
 
-	ClasspathResourceSelector(String classpathResourceName, FilePosition position) {
+	ClasspathResourceSelector(String classpathResourceName, @Nullable FilePosition position) {
 		boolean startsWithSlash = classpathResourceName.startsWith("/");
 		this.classpathResourceName = (startsWithSlash ? classpathResourceName.substring(1) : classpathResourceName);
 		this.position = position;
@@ -159,7 +164,7 @@ public class ClasspathResourceSelector implements DiscoverySelector {
 		}
 		else {
 			return Optional.of(DiscoverySelectorIdentifier.create(IdentifierParser.PREFIX,
-				String.format("%s?%s", this.classpathResourceName, this.position.toQueryPart())));
+				"%s?%s".formatted(this.classpathResourceName, this.position.toQueryPart())));
 		}
 	}
 

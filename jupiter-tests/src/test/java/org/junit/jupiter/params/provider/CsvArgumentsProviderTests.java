@@ -17,6 +17,7 @@ import static org.mockito.Mockito.mock;
 
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -185,7 +186,7 @@ class CsvArgumentsProviderTests {
 	}
 
 	@Test
-	void understandsEscapeCharactersWithCutomQuoteCharacter() {
+	void understandsEscapeCharactersWithCustomQuoteCharacter() {
 		var annotation = csvSource().quoteCharacter('~').lines("~foo or ~~bar~~~, baz").build();
 
 		var arguments = provideArguments(annotation);
@@ -387,7 +388,7 @@ class CsvArgumentsProviderTests {
 	}
 
 	@SuppressWarnings("unchecked")
-	private static <T> T[] array(T... elements) {
+	private static <T> @Nullable T[] array(@Nullable T... elements) {
 		return elements;
 	}
 

@@ -10,7 +10,6 @@
 
 package org.junit.platform.commons.util;
 
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.StreamSupport.stream;
 
 import java.util.List;
@@ -29,16 +28,16 @@ class ClasspathScannerLoader {
 		ServiceLoader<ClasspathScanner> serviceLoader = ServiceLoader.load(ClasspathScanner.class,
 			ClassLoaderUtils.getDefaultClassLoader());
 
-		List<ClasspathScanner> classpathScanners = stream(serviceLoader.spliterator(), false).collect(toList());
+		List<ClasspathScanner> classpathScanners = stream(serviceLoader.spliterator(), false).toList();
 
 		if (classpathScanners.size() == 1) {
 			return classpathScanners.get(0);
 		}
 
 		if (classpathScanners.size() > 1) {
-			throw new JUnitException(String.format(
-				"There should not be more than one ClasspathScanner implementation present on the classpath but there were %d: %s",
-				classpathScanners.size(), classpathScanners));
+			throw new JUnitException(
+				"There should not be more than one ClasspathScanner implementation present on the classpath but there were %d: %s".formatted(
+					classpathScanners.size(), classpathScanners));
 		}
 
 		return new DefaultClasspathScanner(ClassLoaderUtils::getDefaultClassLoader, ReflectionUtils::tryToLoadClass);

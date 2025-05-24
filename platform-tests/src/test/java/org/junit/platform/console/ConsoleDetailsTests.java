@@ -10,7 +10,6 @@
 
 package org.junit.platform.console;
 
-import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -25,7 +24,7 @@ import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
@@ -87,6 +86,7 @@ class ConsoleDetailsTests {
 				for (var theme : Theme.values()) {
 					var caption = containerName + "-" + methodName + "-" + details + "-" + theme;
 					String[] args = { //
+							"execute", //
 							"--include-engine", "junit-jupiter", //
 							"--details", details.name(), //
 							"--details-theme", theme.name(), //
@@ -198,17 +198,7 @@ class ConsoleDetailsTests {
 
 	}
 
-	private static class Runner implements Executable {
-
-		private final String dirName;
-		private final String outName;
-		private final String[] args;
-
-		private Runner(String dirName, String outName, String... args) {
-			this.dirName = dirName;
-			this.outName = outName;
-			this.args = args;
-		}
+	private record Runner(String dirName, String outName, String... args) implements Executable {
 
 		@Override
 		public void execute() throws Throwable {
@@ -219,16 +209,16 @@ class ConsoleDetailsTests {
 			if (optionalUri.isEmpty()) {
 				if (Boolean.getBoolean("org.junit.platform.console.ConsoleDetailsTests.writeResultOut")) {
 					// do not use Files.createTempDirectory(prefix) as we want one folder for one container
-					var temp = Paths.get(System.getProperty("java.io.tmpdir"), dirName.replace('/', '-'));
+					var temp = Path.of(System.getProperty("java.io.tmpdir"), dirName.replace('/', '-'));
 					Files.createDirectories(temp);
 					var path = Files.writeString(temp.resolve(outName), result.out);
 					throw new TestAbortedException(
-						format("resource `%s` not found\nwrote console stdout to: %s/%s", dirName, outName, path));
+						"resource `%s` not found\nwrote console stdout to: %s/%s".formatted(dirName, outName, path));
 				}
 				fail("could not load resource named `" + dirName + "/" + outName + "`");
 			}
 
-			var path = Paths.get(optionalUri.get());
+			var path = Path.of(optionalUri.get());
 			assumeTrue(Files.exists(path), "path does not exist: " + path);
 			assumeTrue(Files.isReadable(path), "can not read: " + path);
 

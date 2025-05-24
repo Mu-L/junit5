@@ -14,11 +14,8 @@ import static java.lang.String.format;
 import static java.util.Collections.synchronizedMap;
 import static java.util.stream.Collectors.toCollection;
 import static java.util.stream.Collectors.toSet;
-import static org.apiguardian.api.API.Status.DEPRECATED;
 import static org.apiguardian.api.API.Status.INTERNAL;
 import static org.apiguardian.api.API.Status.STABLE;
-import static org.junit.platform.commons.util.CollectionUtils.toUnmodifiableList;
-import static org.junit.platform.commons.util.PackageNameUtils.getPackageName;
 import static org.junit.platform.commons.util.ReflectionUtils.HierarchyTraversalMode.BOTTOM_UP;
 import static org.junit.platform.commons.util.ReflectionUtils.HierarchyTraversalMode.TOP_DOWN;
 
@@ -58,6 +55,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import org.apiguardian.api.API;
+import org.jspecify.annotations.Nullable;
 import org.junit.platform.commons.JUnitException;
 import org.junit.platform.commons.function.Try;
 import org.junit.platform.commons.logging.Logger;
@@ -95,7 +93,7 @@ public final class ReflectionUtils {
 	 * <p>When set to {@code false} (either explicitly or implicitly), field and
 	 * method searches will adhere to Java semantics regarding whether a given
 	 * field or method is visible or overridden, where the latter only applies
-	 * to methods. When set to {@code true}, the semantics used in JUnit 5 prior
+	 * to methods. When set to {@code true}, the semantics used in versions prior
 	 * to JUnit 5.11 (JUnit Platform 1.11) will be used, which means that fields
 	 * and methods can hide, shadow, or supersede fields and methods in supertypes
 	 * based solely on the field's name or the method's signature, disregarding
@@ -238,7 +236,7 @@ public final class ReflectionUtils {
 
 		classNameToTypeMap = Collections.unmodifiableMap(classNamesToTypes);
 
-		Map<Class<?>, Class<?>> primitivesToWrappers = new IdentityHashMap<>(9);
+		Map<Class<?>, Class<?>> primitivesToWrappers = new IdentityHashMap<>(8);
 
 		primitivesToWrappers.put(boolean.class, Boolean.class);
 		primitivesToWrappers.put(byte.class, Byte.class);
@@ -380,7 +378,7 @@ public final class ReflectionUtils {
 	 * @since 1.12
 	 */
 	@API(status = INTERNAL, since = "1.12")
-	public static boolean isRecordObject(Object object) {
+	public static boolean isRecordObject(@Nullable Object object) {
 		return object != null && isRecordClass(object.getClass());
 	}
 
@@ -390,8 +388,7 @@ public final class ReflectionUtils {
 	 */
 	@API(status = INTERNAL, since = "1.12")
 	public static boolean isRecordClass(Class<?> clazz) {
-		Class<?> superclass = clazz.getSuperclass();
-		return superclass != null && "java.lang.Record".equals(superclass.getName());
+		return clazz.isRecord();
 	}
 
 	/**
@@ -410,7 +407,7 @@ public final class ReflectionUtils {
 	 * @param obj the object to test; potentially {@code null}
 	 * @return {@code true} if the object is an array
 	 */
-	public static boolean isArray(Object obj) {
+	public static boolean isArray(@Nullable Object obj) {
 		return (obj != null && obj.getClass().isArray());
 	}
 
@@ -422,7 +419,7 @@ public final class ReflectionUtils {
 	 * @since 1.3.2
 	 */
 	@API(status = INTERNAL, since = "1.3.2")
-	public static boolean isMultidimensionalArray(Object obj) {
+	public static boolean isMultidimensionalArray(@Nullable Object obj) {
 		return (obj != null && obj.getClass().isArray() && obj.getClass().getComponentType().isArray());
 	}
 
@@ -482,7 +479,7 @@ public final class ReflectionUtils {
 	 * @see Class#isAssignableFrom(Class)
 	 * @see #isAssignableTo(Class, Class)
 	 */
-	public static boolean isAssignableTo(Object obj, Class<?> targetType) {
+	public static boolean isAssignableTo(@Nullable Object obj, Class<?> targetType) {
 		Preconditions.notNull(targetType, "target type must not be null");
 
 		if (obj == null) {
@@ -565,9 +562,9 @@ public final class ReflectionUtils {
 	 *
 	 * @param type the primitive type for which to retrieve the wrapper type
 	 * @return the corresponding wrapper type or {@code null} if the
-	 * supplied type is {@code null} or not a primitive type
+	 * supplied type is not a primitive type
 	 */
-	public static Class<?> getWrapperType(Class<?> type) {
+	public static @Nullable Class<?> getWrapperType(Class<?> type) {
 		return primitiveToWrapperMap.get(type);
 	}
 
@@ -603,7 +600,7 @@ public final class ReflectionUtils {
 	 * @see #newInstance(Class, Object...)
 	 * @see ExceptionUtils#throwAsUncheckedException(Throwable)
 	 */
-	public static <T> T newInstance(Constructor<T> constructor, Object... args) {
+	public static <T> T newInstance(Constructor<T> constructor, @Nullable Object... args) {
 		Preconditions.notNull(constructor, "Constructor must not be null");
 
 		try {
@@ -612,27 +609,6 @@ public final class ReflectionUtils {
 		catch (Throwable t) {
 			throw ExceptionUtils.throwAsUncheckedException(getUnderlyingCause(t));
 		}
-	}
-
-	/**
-	 * Read the value of a potentially inaccessible or nonexistent field.
-	 *
-	 * <p>If the field does not exist or the value of the field is {@code null},
-	 * an empty {@link Optional} will be returned.
-	 *
-	 * @param clazz the class where the field is declared; never {@code null}
-	 * @param fieldName the name of the field; never {@code null} or empty
-	 * @param instance the instance from where the value is to be read; may
-	 * be {@code null} for a static field
-	 * @see #readFieldValue(Field)
-	 * @see #readFieldValue(Field, Object)
-	 * @deprecated Please use {@link #tryToReadFieldValue(Class, String, Object)}
-	 * instead.
-	 */
-	@API(status = DEPRECATED, since = "1.4")
-	@Deprecated
-	public static <T> Optional<Object> readFieldValue(Class<T> clazz, String fieldName, T instance) {
-		return tryToReadFieldValue(clazz, fieldName, instance).toOptional();
 	}
 
 	/**
@@ -650,7 +626,7 @@ public final class ReflectionUtils {
 	 * @see #tryToReadFieldValue(Field, Object)
 	 */
 	@API(status = INTERNAL, since = "1.4")
-	public static <T> Try<Object> tryToReadFieldValue(Class<T> clazz, String fieldName, T instance) {
+	public static <T> Try<Object> tryToReadFieldValue(Class<T> clazz, String fieldName, @Nullable T instance) {
 		Preconditions.notNull(clazz, "Class must not be null");
 		Preconditions.notBlank(fieldName, "Field name must not be null or blank");
 
@@ -658,25 +634,6 @@ public final class ReflectionUtils {
 		return Try.call(() -> clazz.getDeclaredField(fieldName))
 				.andThen(field -> tryToReadFieldValue(field, instance));
 		// @formatter:on
-	}
-
-	/**
-	 * Read the value of the supplied static field, making it accessible if
-	 * necessary and {@linkplain ExceptionUtils#throwAsUncheckedException masking}
-	 * any checked exception as an unchecked exception.
-	 *
-	 * <p>If the value of the field is {@code null}, an empty {@link Optional}
-	 * will be returned.
-	 *
-	 * @param field the field to read; never {@code null}
-	 * @see #readFieldValue(Field, Object)
-	 * @see #readFieldValue(Class, String, Object)
-	 * @deprecated Please use {@link #tryToReadFieldValue(Field)} instead.
-	 */
-	@API(status = DEPRECATED, since = "1.4")
-	@Deprecated
-	public static Optional<Object> readFieldValue(Field field) {
-		return tryToReadFieldValue(field).toOptional();
 	}
 
 	/**
@@ -691,30 +648,8 @@ public final class ReflectionUtils {
 	 * @see #tryToReadFieldValue(Class, String, Object)
 	 */
 	@API(status = INTERNAL, since = "1.4")
-	public static Try<Object> tryToReadFieldValue(Field field) {
+	public static Try<@Nullable Object> tryToReadFieldValue(Field field) {
 		return tryToReadFieldValue(field, null);
-	}
-
-	/**
-	 * Read the value of the supplied field, making it accessible if necessary
-	 * and {@linkplain ExceptionUtils#throwAsUncheckedException masking} any
-	 * checked exception as an unchecked exception.
-	 *
-	 * <p>If the value of the field is {@code null}, an empty {@link Optional}
-	 * will be returned.
-	 *
-	 * @param field the field to read; never {@code null}
-	 * @param instance the instance from which the value is to be read; may
-	 * be {@code null} for a static field
-	 * @see #readFieldValue(Field)
-	 * @see #readFieldValue(Class, String, Object)
-	 * @deprecated Please use {@link #tryToReadFieldValue(Field, Object)}
-	 * instead.
-	 */
-	@API(status = DEPRECATED, since = "1.4")
-	@Deprecated
-	public static Optional<Object> readFieldValue(Field field, Object instance) {
-		return tryToReadFieldValue(field, instance).toOptional();
 	}
 
 	/**
@@ -723,7 +658,7 @@ public final class ReflectionUtils {
 	 * @see #tryToReadFieldValue(Class, String, Object)
 	 */
 	@API(status = INTERNAL, since = "1.4")
-	public static Try<Object> tryToReadFieldValue(Field field, Object instance) {
+	public static Try<@Nullable Object> tryToReadFieldValue(Field field, @Nullable Object instance) {
 		Preconditions.notNull(field, "Field must not be null");
 		Preconditions.condition((instance != null || isStatic(field)),
 			() -> String.format("Cannot read non-static field [%s] on a null instance.", field));
@@ -742,7 +677,7 @@ public final class ReflectionUtils {
 	 * @return an immutable list of the values of the specified fields; never
 	 * {@code null} but may be empty or contain {@code null} entries
 	 */
-	public static List<Object> readFieldValues(List<Field> fields, Object instance) {
+	public static List<@Nullable Object> readFieldValues(List<Field> fields, @Nullable Object instance) {
 		return readFieldValues(fields, instance, field -> true);
 	}
 
@@ -759,7 +694,8 @@ public final class ReflectionUtils {
 	 * @return an immutable list of the values of the specified fields; never
 	 * {@code null} but may be empty or contain {@code null} entries
 	 */
-	public static List<Object> readFieldValues(List<Field> fields, Object instance, Predicate<Field> predicate) {
+	public static List<@Nullable Object> readFieldValues(List<Field> fields, @Nullable Object instance,
+			Predicate<Field> predicate) {
 		Preconditions.notNull(fields, "fields list must not be null");
 		Preconditions.notNull(predicate, "Predicate must not be null");
 
@@ -767,16 +703,15 @@ public final class ReflectionUtils {
 		return fields.stream()
 				.filter(predicate)
 				.map(field ->
-					tryToReadFieldValue(field, instance)
-						.getOrThrow(ExceptionUtils::throwAsUncheckedException))
-				.collect(toUnmodifiableList());
+					tryToReadFieldValue(field, instance).getOrThrow(ExceptionUtils::throwAsUncheckedException))
+				.toList();
 		// @formatter:on
 	}
 
 	/**
 	 * @see org.junit.platform.commons.support.ReflectionSupport#invokeMethod(Method, Object, Object...)
 	 */
-	public static Object invokeMethod(Method method, Object target, Object... args) {
+	public static @Nullable Object invokeMethod(Method method, @Nullable Object target, @Nullable Object... args) {
 		Preconditions.notNull(method, "Method must not be null");
 		Preconditions.condition((target != null || isStatic(method)),
 			() -> String.format("Cannot invoke non-static method [%s] on a null target.", method.toGenericString()));
@@ -790,41 +725,12 @@ public final class ReflectionUtils {
 	}
 
 	/**
-	 * @see org.junit.platform.commons.support.ReflectionSupport#loadClass(String)
-	 * @deprecated Please use {@link #tryToLoadClass(String)} instead.
-	 */
-	@API(status = DEPRECATED, since = "1.4")
-	@Deprecated
-	public static Optional<Class<?>> loadClass(String name) {
-		return tryToLoadClass(name).toOptional();
-	}
-
-	/**
 	 * @since 1.4
 	 * @see org.junit.platform.commons.support.ReflectionSupport#tryToLoadClass(String)
 	 */
 	@API(status = INTERNAL, since = "1.4")
 	public static Try<Class<?>> tryToLoadClass(String name) {
 		return tryToLoadClass(name, ClassLoaderUtils.getDefaultClassLoader());
-	}
-
-	/**
-	 * Load a class by its <em>primitive name</em> or <em>fully qualified name</em>,
-	 * using the supplied {@link ClassLoader}.
-	 *
-	 * <p>See {@link org.junit.platform.commons.support.ReflectionSupport#loadClass(String)}
-	 * for details on support for class names for arrays.
-	 *
-	 * @param name the name of the class to load; never {@code null} or blank
-	 * @param classLoader the {@code ClassLoader} to use; never {@code null}
-	 * @see #loadClass(String)
-	 * @deprecated Please use {@link #tryToLoadClass(String, ClassLoader)}
-	 * instead.
-	 */
-	@API(status = DEPRECATED, since = "1.4")
-	@Deprecated
-	public static Optional<Class<?>> loadClass(String name, ClassLoader classLoader) {
-		return tryToLoadClass(name, classLoader).toOptional();
 	}
 
 	/**
@@ -842,7 +748,7 @@ public final class ReflectionUtils {
 	 */
 	@API(status = INTERNAL, since = "1.11")
 	public static Class<?> loadRequiredClass(String name, ClassLoader classLoader) throws JUnitException {
-		return tryToLoadClass(name, classLoader).getOrThrow(
+		return tryToLoadClass(name, classLoader).getNonNullOrThrow(
 			cause -> new JUnitException(format("Could not load class [%s]", name), cause));
 	}
 
@@ -974,7 +880,8 @@ public final class ReflectionUtils {
 	 * @param parameterTypes the parameter types of the method; may be {@code null} or empty
 	 * @return fully qualified method name; never {@code null}
 	 */
-	public static String getFullyQualifiedMethodName(Class<?> clazz, String methodName, Class<?>... parameterTypes) {
+	public static String getFullyQualifiedMethodName(Class<?> clazz, String methodName,
+			Class<?> @Nullable... parameterTypes) {
 		Preconditions.notNull(clazz, "Class must not be null");
 
 		return getFullyQualifiedMethodName(clazz.getName(), methodName, ClassUtils.nullSafeToString(parameterTypes));
@@ -1109,14 +1016,14 @@ public final class ReflectionUtils {
 	 * @since 1.1
 	 */
 	public static List<Class<?>> findAllClassesInClasspathRoot(URI root, ClassFilter classFilter) {
-		return Collections.unmodifiableList(classpathScanner.scanForClassesInClasspathRoot(root, classFilter));
+		return List.copyOf(classpathScanner.scanForClassesInClasspathRoot(root, classFilter));
 	}
 
 	/**
 	 * @since 1.11
 	 */
 	public static List<Resource> findAllResourcesInClasspathRoot(URI root, Predicate<Resource> resourceFilter) {
-		return Collections.unmodifiableList(classpathScanner.scanForResourcesInClasspathRoot(root, resourceFilter));
+		return List.copyOf(classpathScanner.scanForResourcesInClasspathRoot(root, resourceFilter));
 	}
 
 	/**
@@ -1155,15 +1062,14 @@ public final class ReflectionUtils {
 	 * @since 1.1
 	 */
 	public static List<Class<?>> findAllClassesInPackage(String basePackageName, ClassFilter classFilter) {
-		return Collections.unmodifiableList(classpathScanner.scanForClassesInPackage(basePackageName, classFilter));
+		return List.copyOf(classpathScanner.scanForClassesInPackage(basePackageName, classFilter));
 	}
 
 	/**
 	 * @since 1.11
 	 */
 	public static List<Resource> findAllResourcesInPackage(String basePackageName, Predicate<Resource> resourceFilter) {
-		return Collections.unmodifiableList(
-			classpathScanner.scanForResourcesInPackage(basePackageName, resourceFilter));
+		return List.copyOf(classpathScanner.scanForResourcesInPackage(basePackageName, resourceFilter));
 	}
 
 	/**
@@ -1204,14 +1110,14 @@ public final class ReflectionUtils {
 	 * @since 1.1.1
 	 */
 	public static List<Class<?>> findAllClassesInModule(String moduleName, ClassFilter classFilter) {
-		return Collections.unmodifiableList(ModuleUtils.findAllClassesInModule(moduleName, classFilter));
+		return List.copyOf(ModuleUtils.findAllClassesInModule(moduleName, classFilter));
 	}
 
 	/**
 	 * @since 1.11
 	 */
 	public static List<Resource> findAllResourcesInModule(String moduleName, Predicate<Resource> resourceFilter) {
-		return Collections.unmodifiableList(ModuleUtils.findAllResourcesInModule(moduleName, resourceFilter));
+		return List.copyOf(ModuleUtils.findAllResourcesInModule(moduleName, resourceFilter));
 	}
 
 	/**
@@ -1240,7 +1146,7 @@ public final class ReflectionUtils {
 			candidates.add(nestedClass);
 			return true;
 		});
-		return Collections.unmodifiableList(new ArrayList<>(candidates));
+		return List.copyOf(candidates);
 	}
 
 	/**
@@ -1404,7 +1310,7 @@ public final class ReflectionUtils {
 			// @formatter:off
 			return Arrays.stream(clazz.getDeclaredConstructors())
 					.filter(predicate)
-					.collect(toUnmodifiableList());
+					.toList();
 			// @formatter:on
 		}
 		catch (Throwable t) {
@@ -1418,7 +1324,7 @@ public final class ReflectionUtils {
 	public static List<Field> findFields(Class<?> clazz, Predicate<Field> predicate,
 			HierarchyTraversalMode traversalMode) {
 
-		return streamFields(clazz, predicate, traversalMode).collect(toUnmodifiableList());
+		return streamFields(clazz, predicate, traversalMode).toList();
 	}
 
 	/**
@@ -1490,29 +1396,6 @@ public final class ReflectionUtils {
 	}
 
 	/**
-	 * Get the {@link Method} in the specified class with the specified name
-	 * and parameter types.
-	 *
-	 * <p>This method delegates to {@link Class#getMethod(String, Class...)} but
-	 * swallows any exception thrown.
-	 *
-	 * @param clazz the class in which to search for the method; never {@code null}
-	 * @param methodName the name of the method to get; never {@code null} or blank
-	 * @param parameterTypes the parameter types of the method; may be {@code null}
-	 * or empty
-	 * @return an {@code Optional} containing the method; never {@code null} but
-	 * empty if the invocation of {@code Class#getMethod()} throws a
-	 * {@link NoSuchMethodException}
-	 * @deprecated Please use {@link #tryToGetMethod(Class, String, Class[])}
-	 * instead.
-	 */
-	@API(status = DEPRECATED, since = "1.4")
-	@Deprecated
-	static Optional<Method> getMethod(Class<?> clazz, String methodName, Class<?>... parameterTypes) {
-		return tryToGetMethod(clazz, methodName, parameterTypes).toOptional();
-	}
-
-	/**
 	 * Try to get the {@link Method} in the specified class with the specified
 	 * name and parameter types.
 	 *
@@ -1529,7 +1412,7 @@ public final class ReflectionUtils {
 	 * @since 1.4
 	 */
 	@API(status = INTERNAL, since = "1.4")
-	public static Try<Method> tryToGetMethod(Class<?> clazz, String methodName, Class<?>... parameterTypes) {
+	public static Try<Method> tryToGetMethod(Class<?> clazz, String methodName, Class<?> @Nullable... parameterTypes) {
 		Preconditions.notNull(clazz, "Class must not be null");
 		Preconditions.notBlank(methodName, "Method name must not be null or blank");
 
@@ -1548,7 +1431,7 @@ public final class ReflectionUtils {
 	 * @since 1.11
 	 */
 	@API(status = INTERNAL, since = "1.11")
-	public static Method getInterfaceMethodIfPossible(Method method, Class<?> targetClass) {
+	public static Method getInterfaceMethodIfPossible(Method method, @Nullable Class<?> targetClass) {
 		if (!isPublic(method) || method.getDeclaringClass().isInterface()) {
 			return method;
 		}
@@ -1586,15 +1469,17 @@ public final class ReflectionUtils {
 	/**
 	 * @see org.junit.platform.commons.support.ReflectionSupport#findMethod(Class, String, String)
 	 */
-	public static Optional<Method> findMethod(Class<?> clazz, String methodName, String parameterTypeNames) {
+	public static Optional<Method> findMethod(Class<?> clazz, String methodName, @Nullable String parameterTypeNames) {
 		Preconditions.notNull(clazz, "Class must not be null");
 		Preconditions.notBlank(methodName, "Method name must not be null or blank");
 		return findMethod(clazz, methodName, resolveParameterTypes(clazz, methodName, parameterTypeNames));
 	}
 
 	@API(status = INTERNAL, since = "1.10")
-	public static Class<?>[] resolveParameterTypes(Class<?> clazz, String methodName, String parameterTypeNames) {
-		if (StringUtils.isBlank(parameterTypeNames)) {
+	public static Class<?>[] resolveParameterTypes(Class<?> clazz, String methodName,
+			@Nullable String parameterTypeNames) {
+
+		if (parameterTypeNames == null || StringUtils.isBlank(parameterTypeNames)) {
 			return EMPTY_CLASS_ARRAY;
 		}
 
@@ -1611,7 +1496,7 @@ public final class ReflectionUtils {
 
 		// @formatter:off
 		return tryToLoadClass(typeName, classLoader)
-				.getOrThrow(cause -> new JUnitException(
+				.getNonNullOrThrow(cause -> new JUnitException(
 						String.format("Failed to load parameter type [%s] for method [%s] in class [%s].",
 								typeName, methodName, clazz.getName()), cause));
 		// @formatter:on
@@ -1705,7 +1590,7 @@ public final class ReflectionUtils {
 	public static List<Method> findMethods(Class<?> clazz, Predicate<Method> predicate,
 			HierarchyTraversalMode traversalMode) {
 
-		return streamMethods(clazz, predicate, traversalMode).collect(toUnmodifiableList());
+		return streamMethods(clazz, predicate, traversalMode).toList();
 	}
 
 	/**
@@ -1758,14 +1643,6 @@ public final class ReflectionUtils {
 			Collections.addAll(methods, superclassMethods);
 		}
 		return methods;
-	}
-
-	/**
-	 * Custom alternative to {@link Class#getFields()} that sorts the fields
-	 * and converts them to a mutable list.
-	 */
-	private static List<Field> getFields(Class<?> clazz) {
-		return toSortedMutableList(clazz.getFields());
 	}
 
 	/**
@@ -1989,7 +1866,7 @@ public final class ReflectionUtils {
 	}
 
 	private static boolean declaredInSamePackage(Method m1, Method m2) {
-		return getPackageName(m1.getDeclaringClass()).equals(getPackageName(m2.getDeclaringClass()));
+		return m1.getDeclaringClass().getPackageName().equals(m2.getDeclaringClass().getPackageName());
 	}
 
 	/**
@@ -2087,7 +1964,7 @@ public final class ReflectionUtils {
 	 * searched but may be applicable for other use cases as well.
 	 * @since 1.6
 	 */
-	private static boolean isSearchable(Class<?> clazz) {
+	private static boolean isSearchable(@Nullable Class<?> clazz) {
 		return (clazz != null && clazz != Object.class);
 	}
 

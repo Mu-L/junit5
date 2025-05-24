@@ -10,8 +10,6 @@
 
 package org.junit.platform.commons.support.conversion;
 
-import static java.util.Arrays.asList;
-import static java.util.Collections.unmodifiableList;
 import static org.apiguardian.api.API.Status.EXPERIMENTAL;
 import static org.junit.platform.commons.util.ReflectionUtils.getWrapperType;
 
@@ -19,6 +17,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.apiguardian.api.API;
+import org.jspecify.annotations.Nullable;
 import org.junit.platform.commons.util.ClassLoaderUtils;
 
 /**
@@ -30,7 +29,7 @@ import org.junit.platform.commons.util.ClassLoaderUtils;
 @API(status = EXPERIMENTAL, since = "1.11")
 public final class ConversionSupport {
 
-	private static final List<StringToObjectConverter> stringToObjectConverters = unmodifiableList(asList( //
+	private static final List<StringToObjectConverter> stringToObjectConverters = List.of( //
 		new StringToBooleanConverter(), //
 		new StringToCharacterConverter(), //
 		new StringToNumberConverter(), //
@@ -39,7 +38,7 @@ public final class ConversionSupport {
 		new StringToJavaTimeConverter(), //
 		new StringToCommonJavaTypesConverter(), //
 		new FallbackStringToObjectConverter() //
-	));
+	);
 
 	private ConversionSupport() {
 		/* no-op */
@@ -99,7 +98,8 @@ public final class ConversionSupport {
 	 * @since 1.11
 	 */
 	@SuppressWarnings("unchecked")
-	public static <T> T convert(String source, Class<T> targetType, ClassLoader classLoader) {
+	public static <T> @Nullable T convert(@Nullable String source, Class<T> targetType,
+			@Nullable ClassLoader classLoader) {
 		if (source == null) {
 			if (targetType.isPrimitive()) {
 				throw new ConversionException(
@@ -122,13 +122,13 @@ public final class ConversionSupport {
 				return (T) converter.get().convert(source, targetTypeToUse, classLoaderToUse);
 			}
 			catch (Exception ex) {
-				if (ex instanceof ConversionException) {
+				if (ex instanceof ConversionException conversionException) {
 					// simply rethrow it
-					throw (ConversionException) ex;
+					throw conversionException;
 				}
 				// else
 				throw new ConversionException(
-					String.format("Failed to convert String \"%s\" to type %s", source, targetType.getTypeName()), ex);
+					"Failed to convert String \"%s\" to type %s".formatted(source, targetType.getTypeName()), ex);
 			}
 		}
 

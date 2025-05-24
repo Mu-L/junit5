@@ -13,8 +13,8 @@ package org.junit.platform.reporting.legacy.xml;
 import static java.text.MessageFormat.format;
 import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 import static java.util.Collections.emptyList;
-import static java.util.Collections.unmodifiableMap;
 import static java.util.Comparator.naturalOrder;
+import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.counting;
 import static java.util.stream.Collectors.groupingBy;
@@ -40,7 +40,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -55,6 +54,7 @@ import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
 
+import org.jspecify.annotations.Nullable;
 import org.junit.platform.engine.TestExecutionResult;
 import org.junit.platform.engine.reporting.ReportEntry;
 import org.junit.platform.launcher.TestIdentifier;
@@ -73,14 +73,11 @@ class XmlReportWriter {
 
 	static final char ILLEGAL_CHARACTER_REPLACEMENT = '\uFFFD';
 
-	private static final Map<Character, String> REPLACEMENTS_IN_ATTRIBUTE_VALUES;
-	static {
-		Map<Character, String> tmp = new HashMap<>(3);
-		tmp.put('\n', "&#10;");
-		tmp.put('\r', "&#13;");
-		tmp.put('\t', "&#9;");
-		REPLACEMENTS_IN_ATTRIBUTE_VALUES = unmodifiableMap(tmp);
-	}
+	private static final Map<Character, String> REPLACEMENTS_IN_ATTRIBUTE_VALUES = Map.of( //
+		'\n', "&#10;", //
+		'\r', "&#13;", //
+		'\t', "&#9;" //
+	);
 
 	// Using zero-width assertions in the split pattern simplifies the splitting process: All split parts
 	// (including the first and last one) can be used directly, without having to re-add separator characters.
@@ -244,10 +241,10 @@ class XmlReportWriter {
 			}
 		}
 
-		private void writeSkippedElement(String reason, XMLStreamWriter writer) throws XMLStreamException {
+		private void writeSkippedElement(@Nullable String reason, XMLStreamWriter writer) throws XMLStreamException {
 			if (isNotBlank(reason)) {
 				writer.writeStartElement("skipped");
-				writeCDataSafely(reason);
+				writeCDataSafely(requireNonNull(reason));
 				writer.writeEndElement();
 			}
 			else {
@@ -256,7 +253,7 @@ class XmlReportWriter {
 			newLine();
 		}
 
-		private void writeErrorOrFailureElement(Type type, Throwable throwable, XMLStreamWriter writer)
+		private void writeErrorOrFailureElement(Type type, @Nullable Throwable throwable, XMLStreamWriter writer)
 				throws XMLStreamException {
 
 			String elementName = type == FAILURE ? "failure" : "error";

@@ -12,7 +12,6 @@ package platform.tooling.support;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -26,7 +25,7 @@ import java.util.stream.Stream;
  */
 public class Helper {
 
-	private static final Path ROOT = Paths.get("..");
+	private static final Path ROOT = Path.of("..");
 	private static final Path GRADLE_PROPERTIES = ROOT.resolve("gradle.properties");
 	private static final Path SETTINGS_GRADLE = ROOT.resolve("settings.gradle.kts");
 
@@ -41,17 +40,8 @@ public class Helper {
 		}
 	}
 
-	public static String version(String module) {
-		if (module.startsWith("junit-jupiter")) {
-			return gradleProperties.getProperty("version");
-		}
-		if (module.startsWith("junit-platform")) {
-			return gradleProperties.getProperty("platformVersion");
-		}
-		if (module.startsWith("junit-vintage")) {
-			return gradleProperties.getProperty("vintageVersion");
-		}
-		throw new AssertionError("Unknown module: " + module);
+	public static String version() {
+		return gradleProperties.getProperty("version");
 	}
 
 	public static List<String> loadModuleDirectoryNames() {

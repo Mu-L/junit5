@@ -10,7 +10,6 @@
 
 package org.junit.platform.engine.discovery;
 
-import static org.apiguardian.api.API.Status.DEPRECATED;
 import static org.apiguardian.api.API.Status.EXPERIMENTAL;
 import static org.apiguardian.api.API.Status.INTERNAL;
 import static org.apiguardian.api.API.Status.STABLE;
@@ -20,6 +19,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 import org.apiguardian.api.API;
+import org.jspecify.annotations.Nullable;
 import org.junit.platform.commons.JUnitException;
 import org.junit.platform.commons.PreconditionViolationException;
 import org.junit.platform.commons.function.Try;
@@ -60,19 +60,24 @@ import org.junit.platform.engine.DiscoverySelectorIdentifier;
 @API(status = STABLE, since = "1.0")
 public class MethodSelector implements DiscoverySelector {
 
+	@Nullable
 	private final ClassLoader classLoader;
 	private final String className;
 	private final String methodName;
 	private final String parameterTypeNames;
 
+	@Nullable
 	private volatile Class<?> javaClass;
+
+	@Nullable
 	private volatile Method javaMethod;
-	private volatile Class<?>[] parameterTypes;
+
+	private volatile Class<?> @Nullable [] parameterTypes;
 
 	/**
 	 * @since 1.10
 	 */
-	MethodSelector(ClassLoader classLoader, String className, String methodName, String parameterTypeNames) {
+	MethodSelector(@Nullable ClassLoader classLoader, String className, String methodName, String parameterTypeNames) {
 		this.classLoader = classLoader;
 		this.className = className;
 		this.methodName = methodName;
@@ -90,7 +95,7 @@ public class MethodSelector implements DiscoverySelector {
 	/**
 	 * @since 1.10
 	 */
-	MethodSelector(ClassLoader classLoader, String className, String methodName, Class<?>... parameterTypes) {
+	MethodSelector(@Nullable ClassLoader classLoader, String className, String methodName, Class<?>... parameterTypes) {
 		this.classLoader = classLoader;
 		this.className = className;
 		this.methodName = methodName;
@@ -127,7 +132,7 @@ public class MethodSelector implements DiscoverySelector {
 	 * @since 1.10
 	 */
 	@API(status = EXPERIMENTAL, since = "1.10")
-	public ClassLoader getClassLoader() {
+	public @Nullable ClassLoader getClassLoader() {
 		return this.classLoader;
 	}
 
@@ -143,23 +148,6 @@ public class MethodSelector implements DiscoverySelector {
 	 */
 	public String getMethodName() {
 		return this.methodName;
-	}
-
-	/**
-	 * Get the names of parameter types for the selected method.
-	 *
-	 * <p>See {@link #getParameterTypeNames()} for details.
-	 *
-	 * @return the names of parameter types
-	 * @since 1.0
-	 * @see #getParameterTypeNames()
-	 * @see #getParameterTypes()
-	 * @deprecated since 1.10 in favor of {@link #getParameterTypeNames()}
-	 */
-	@Deprecated
-	@API(status = DEPRECATED, since = "1.10")
-	public String getMethodParameterTypes() {
-		return getParameterTypeNames();
 	}
 
 	/**
@@ -194,8 +182,7 @@ public class MethodSelector implements DiscoverySelector {
 	 * @see #getJavaMethod()
 	 */
 	public Class<?> getJavaClass() {
-		lazyLoadJavaClass();
-		return this.javaClass;
+		return lazyLoadJavaClass();
 	}
 
 	/**
@@ -208,8 +195,7 @@ public class MethodSelector implements DiscoverySelector {
 	 * @see #getJavaClass()
 	 */
 	public Method getJavaMethod() {
-		lazyLoadJavaMethod();
-		return this.javaMethod;
+		return lazyLoadJavaMethod();
 	}
 
 	/**
@@ -229,48 +215,54 @@ public class MethodSelector implements DiscoverySelector {
 	 */
 	@API(status = EXPERIMENTAL, since = "1.10")
 	public Class<?>[] getParameterTypes() {
-		lazyLoadParameterTypes();
-		return this.parameterTypes.clone();
+		return lazyLoadParameterTypes().clone();
 	}
 
-	private void lazyLoadJavaClass() {
-		// @formatter:off
-		if (this.javaClass == null) {
+	private Class<?> lazyLoadJavaClass() {
+		Class<?> value = this.javaClass;
+		if (value == null) {
+			// @formatter:off
 			Try<Class<?>> tryToLoadClass = this.classLoader == null
 				? ReflectionSupport.tryToLoadClass(this.className)
 				: ReflectionSupport.tryToLoadClass(this.className, this.classLoader);
-			this.javaClass = tryToLoadClass.getOrThrow(cause ->
+			value = tryToLoadClass.getNonNullOrThrow(cause ->
 				new PreconditionViolationException("Could not load class with name: " + this.className, cause));
+			// @formatter:on
+			this.javaClass = value;
 		}
-		// @formatter:on
+		return value;
 	}
 
-	private void lazyLoadJavaMethod() {
-		if (this.javaMethod == null) {
-			lazyLoadJavaClass();
-			lazyLoadParameterTypes();
-			if (this.parameterTypes.length > 0) {
-				this.javaMethod = ReflectionSupport.findMethod(this.javaClass, this.methodName,
-					this.parameterTypes).orElseThrow(
-						() -> new PreconditionViolationException(String.format(
-							"Could not find method with name [%s] and parameter types [%s] in class [%s].",
-							this.methodName, this.parameterTypeNames, this.javaClass.getName())));
+	private Method lazyLoadJavaMethod() {
+		var value = this.javaMethod;
+		if (value == null) {
+			Class<?> javaClass = lazyLoadJavaClass();
+			var parameterTypes = lazyLoadParameterTypes();
+			if (parameterTypes.length > 0) {
+				value = ReflectionSupport.findMethod(javaClass, this.methodName, parameterTypes).orElseThrow(
+					() -> new PreconditionViolationException(
+						"Could not find method with name [%s] and parameter types [%s] in class [%s].".formatted(
+							this.methodName, this.parameterTypeNames, javaClass.getName())));
 			}
 			else {
-				this.javaMethod = ReflectionSupport.findMethod(this.javaClass, this.methodName).orElseThrow(
+				value = ReflectionSupport.findMethod(javaClass, this.methodName).orElseThrow(
 					() -> new PreconditionViolationException(
-						String.format("Could not find method with name [%s] in class [%s].", this.methodName,
-							this.javaClass.getName())));
+						"Could not find method with name [%s] in class [%s].".formatted(this.methodName,
+							javaClass.getName())));
 			}
+			this.javaMethod = value;
 		}
+		return value;
 	}
 
-	private void lazyLoadParameterTypes() {
-		if (this.parameterTypes == null) {
-			lazyLoadJavaClass();
-			this.parameterTypes = ReflectionUtils.resolveParameterTypes(this.javaClass, this.methodName,
+	private Class<?>[] lazyLoadParameterTypes() {
+		var value = this.parameterTypes;
+		if (value == null) {
+			value = ReflectionUtils.resolveParameterTypes(lazyLoadJavaClass(), this.methodName,
 				this.parameterTypeNames);
+			this.parameterTypes = value;
 		}
+		return value;
 	}
 
 	/**

@@ -24,6 +24,7 @@ import java.util.function.Supplier;
 import java.util.stream.BaseStream;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.support.ParameterDeclarations;
 import org.junit.platform.commons.JUnitException;
@@ -60,8 +61,8 @@ class FieldArgumentsProvider extends AnnotationBasedArgumentsProvider<FieldSourc
 				.map(field -> validateField(field, testInstance))
 				.map(field -> readField(field, testInstance))
 				.flatMap(fieldValue -> {
-					if (fieldValue instanceof Supplier<?>) {
-						fieldValue = ((Supplier<?>) fieldValue).get();
+					if (fieldValue instanceof Supplier<?> supplier) {
+						fieldValue = supplier.get();
 					}
 					return CollectionUtils.toStream(fieldValue);
 				})
@@ -90,12 +91,12 @@ class FieldArgumentsProvider extends AnnotationBasedArgumentsProvider<FieldSourc
 				.findFirst()//
 				.orElse(null);
 
-		Preconditions.notNull(field,
-			() -> format("Could not find field named [%s] in class [%s]", resolvedFieldName, resolvedClass.getName()));
-		return field;
+		return Preconditions.notNull(field,
+			() -> "Could not find field named [%s] in class [%s]".formatted(resolvedFieldName,
+				resolvedClass.getName()));
 	}
 
-	private static Field validateField(Field field, Object testInstance) {
+	private static Field validateField(Field field, @Nullable Object testInstance) {
 		Preconditions.condition(field.getDeclaringClass().isInstance(testInstance) || ModifierSupport.isStatic(field),
 			() -> format("Field '%s' must be static: local @FieldSource fields must be static "
 					+ "unless the PER_CLASS @TestInstance lifecycle mode is used; "
@@ -104,24 +105,24 @@ class FieldArgumentsProvider extends AnnotationBasedArgumentsProvider<FieldSourc
 		return field;
 	}
 
-	private static Object readField(Field field, Object testInstance) {
+	private static Object readField(Field field, @Nullable Object testInstance) {
 		Object value = ReflectionSupport.tryToReadFieldValue(field, testInstance).getOrThrow(
-			cause -> new JUnitException(format("Could not read field [%s]", field.getName()), cause));
+			cause -> new JUnitException("Could not read field [%s]".formatted(field.getName()), cause));
 
 		String fieldName = field.getName();
 		String declaringClass = field.getDeclaringClass().getName();
 
 		Preconditions.notNull(value,
-			() -> format("The value of field [%s] in class [%s] must not be null", fieldName, declaringClass));
+			() -> "The value of field [%s] in class [%s] must not be null".formatted(fieldName, declaringClass));
 
 		Preconditions.condition(!(value instanceof BaseStream),
-			() -> format("The value of field [%s] in class [%s] must not be a stream", fieldName, declaringClass));
+			() -> "The value of field [%s] in class [%s] must not be a stream".formatted(fieldName, declaringClass));
 
 		Preconditions.condition(!(value instanceof Iterator),
-			() -> format("The value of field [%s] in class [%s] must not be an Iterator", fieldName, declaringClass));
+			() -> "The value of field [%s] in class [%s] must not be an Iterator".formatted(fieldName, declaringClass));
 
 		Preconditions.condition(isConvertibleToStream(field, value),
-			() -> format("The value of field [%s] in class [%s] must be convertible to a Stream", fieldName,
+			() -> "The value of field [%s] in class [%s] must be convertible to a Stream".formatted(fieldName,
 				declaringClass));
 
 		return value;
@@ -141,21 +142,18 @@ class FieldArgumentsProvider extends AnnotationBasedArgumentsProvider<FieldSourc
 		// Check declared type T of Supplier<T>.
 		if (Supplier.class.isAssignableFrom(field.getType())) {
 			Type genericType = field.getGenericType();
-			if (genericType instanceof ParameterizedType) {
-				ParameterizedType parameterizedType = (ParameterizedType) genericType;
+			if (genericType instanceof ParameterizedType parameterizedType) {
 				Type[] typeArguments = parameterizedType.getActualTypeArguments();
 				if (typeArguments.length == 1) {
 					Type type = typeArguments[0];
 					// Handle cases such as Supplier<IntStream>
-					if (type instanceof Class) {
-						Class<?> clazz = (Class<?>) type;
+					if (type instanceof Class<?> clazz) {
 						return CollectionUtils.isConvertibleToStream(clazz);
 					}
 					// Handle cases such as Supplier<Stream<String>>
-					if (type instanceof ParameterizedType) {
-						Type rawType = ((ParameterizedType) type).getRawType();
-						if (rawType instanceof Class<?>) {
-							Class<?> clazz = (Class<?>) rawType;
+					if (type instanceof ParameterizedType innerParameterizedType) {
+						Type rawType = innerParameterizedType.getRawType();
+						if (rawType instanceof Class<?> clazz) {
 							return CollectionUtils.isConvertibleToStream(clazz);
 						}
 					}

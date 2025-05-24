@@ -13,6 +13,7 @@ package org.junit.vintage.engine.discovery;
 import java.lang.reflect.Method;
 import java.util.function.Predicate;
 
+import org.jspecify.annotations.Nullable;
 import org.junit.Ignore;
 import org.junit.internal.builders.AllDefaultPossibilitiesBuilder;
 import org.junit.internal.builders.AnnotatedBuilder;
@@ -109,7 +110,7 @@ class DefensiveAllDefaultPossibilitiesBuilder extends AllDefaultPossibilitiesBui
 		}
 
 		@Override
-		public Runner buildRunner(Class<? extends Runner> runnerClass, Class<?> testClass) throws Exception {
+		public @Nullable Runner buildRunner(Class<? extends Runner> runnerClass, Class<?> testClass) throws Exception {
 			// Referenced by name because it might not be available at runtime.
 			if ("org.junit.platform.runner.JUnitPlatform".equals(runnerClass.getName())) {
 				logger.warn(() -> "Ignoring test class using JUnitPlatform runner: " + testClass.getName());
@@ -128,7 +129,7 @@ class DefensiveAllDefaultPossibilitiesBuilder extends AllDefaultPossibilitiesBui
 		private static final Predicate<Method> isPotentialJUnit4TestMethod = new IsPotentialJUnit4TestMethod();
 
 		@Override
-		public Runner runnerForClass(Class<?> testClass) throws Throwable {
+		public @Nullable Runner runnerForClass(Class<?> testClass) throws Throwable {
 			if (containsTestMethods(testClass)) {
 				return super.runnerForClass(testClass);
 			}
@@ -147,7 +148,7 @@ class DefensiveAllDefaultPossibilitiesBuilder extends AllDefaultPossibilitiesBui
 	 */
 	private static class NullIgnoredBuilder extends IgnoredBuilder {
 		@Override
-		public Runner runnerForClass(Class<?> testClass) {
+		public @Nullable Runner runnerForClass(Class<?> testClass) {
 			// don't ignore entire test classes just yet
 			return null;
 		}

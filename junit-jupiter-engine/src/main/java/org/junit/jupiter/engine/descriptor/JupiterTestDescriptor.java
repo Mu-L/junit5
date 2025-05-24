@@ -31,6 +31,7 @@ import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
 import org.apiguardian.api.API;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.extension.ConditionEvaluationResult;
 import org.junit.jupiter.api.extension.Extension;
@@ -40,7 +41,6 @@ import org.junit.jupiter.engine.config.JupiterConfiguration;
 import org.junit.jupiter.engine.execution.ConditionEvaluator;
 import org.junit.jupiter.engine.execution.JupiterEngineExecutionContext;
 import org.junit.jupiter.engine.extension.ExtensionRegistry;
-import org.junit.platform.commons.JUnitException;
 import org.junit.platform.commons.util.ExceptionUtils;
 import org.junit.platform.commons.util.UnrecoverableExceptions;
 import org.junit.platform.engine.DiscoveryIssue;
@@ -65,11 +65,11 @@ public abstract class JupiterTestDescriptor extends AbstractTestDescriptor
 	final JupiterConfiguration configuration;
 
 	JupiterTestDescriptor(UniqueId uniqueId, AnnotatedElement element, Supplier<String> displayNameSupplier,
-			TestSource source, JupiterConfiguration configuration) {
+			@Nullable TestSource source, JupiterConfiguration configuration) {
 		this(uniqueId, determineDisplayName(element, displayNameSupplier), source, configuration);
 	}
 
-	JupiterTestDescriptor(UniqueId uniqueId, String displayName, TestSource source,
+	JupiterTestDescriptor(UniqueId uniqueId, String displayName, @Nullable TestSource source,
 			JupiterConfiguration configuration) {
 		super(uniqueId, displayName, source);
 		this.configuration = configuration;
@@ -79,15 +79,14 @@ public abstract class JupiterTestDescriptor extends AbstractTestDescriptor
 
 	static Set<TestTag> getTags(AnnotatedElement element, Supplier<String> elementDescription,
 			Supplier<TestSource> sourceProvider, Consumer<DiscoveryIssue> issueCollector) {
-		AtomicReference<TestSource> source = new AtomicReference<>();
+		AtomicReference<@Nullable TestSource> source = new AtomicReference<>();
 		return findRepeatableAnnotations(element, Tag.class).stream() //
 				.map(Tag::value) //
 				.filter(tag -> {
 					boolean isValid = TestTag.isValid(tag);
 					if (!isValid) {
-						String message = String.format(
-							"Invalid tag syntax in @Tag(\"%s\") declaration on %s. Tag will be ignored.", tag,
-							elementDescription.get());
+						String message = "Invalid tag syntax in @Tag(\"%s\") declaration on %s. Tag will be ignored.".formatted(
+							tag, elementDescription.get());
 						if (source.get() == null) {
 							source.set(sourceProvider.get());
 						}
@@ -139,8 +138,7 @@ public abstract class JupiterTestDescriptor extends AbstractTestDescriptor
 			return executionMode.get();
 		}
 		Optional<TestDescriptor> parent = getParent();
-		while (parent.isPresent() && parent.get() instanceof JupiterTestDescriptor) {
-			JupiterTestDescriptor jupiterParent = (JupiterTestDescriptor) parent.get();
+		while (parent.isPresent() && parent.get() instanceof JupiterTestDescriptor jupiterParent) {
 			executionMode = jupiterParent.getExplicitExecutionMode();
 			if (executionMode.isPresent()) {
 				return executionMode.get();
@@ -171,19 +169,16 @@ public abstract class JupiterTestDescriptor extends AbstractTestDescriptor
 	}
 
 	public static ExecutionMode toExecutionMode(org.junit.jupiter.api.parallel.ExecutionMode mode) {
-		switch (mode) {
-			case CONCURRENT:
-				return ExecutionMode.CONCURRENT;
-			case SAME_THREAD:
-				return ExecutionMode.SAME_THREAD;
-		}
-		throw new JUnitException("Unknown ExecutionMode: " + mode);
+		return switch (mode) {
+			case CONCURRENT -> ExecutionMode.CONCURRENT;
+			case SAME_THREAD -> ExecutionMode.SAME_THREAD;
+		};
 	}
 
 	@Override
 	public Set<ExclusiveResource> getExclusiveResources() {
-		if (this instanceof ResourceLockAware) {
-			return ((ResourceLockAware) this).determineExclusiveResources().collect(toSet());
+		if (this instanceof ResourceLockAware aware) {
+			return aware.determineExclusiveResources().collect(toSet());
 		}
 		return emptySet();
 	}

@@ -11,13 +11,13 @@
 package org.junit.platform.launcher;
 
 import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toList;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
+import org.jspecify.annotations.Nullable;
 import org.junit.platform.commons.util.Preconditions;
 import org.junit.platform.commons.util.ReflectionUtils;
 import org.junit.platform.engine.TestDescriptor;
@@ -38,18 +38,18 @@ abstract class AbstractMethodFilter implements MethodFilter {
 	AbstractMethodFilter(String... patterns) {
 		Preconditions.notEmpty(patterns, "patterns array must not be null or empty");
 		Preconditions.containsNoNullElements(patterns, "patterns array must not contain null elements");
-		this.patterns = Arrays.stream(patterns).map(Pattern::compile).collect(toList());
+		this.patterns = Arrays.stream(patterns).map(Pattern::compile).toList();
 		this.patternDescription = Arrays.stream(patterns).collect(joining("' OR '", "'", "'"));
 	}
 
-	protected Optional<Pattern> findMatchingPattern(String methodName) {
+	protected Optional<Pattern> findMatchingPattern(@Nullable String methodName) {
 		if (methodName == null) {
 			return Optional.empty();
 		}
 		return this.patterns.stream().filter(pattern -> pattern.matcher(methodName).matches()).findAny();
 	}
 
-	protected String getFullyQualifiedMethodNameFromDescriptor(TestDescriptor descriptor) {
+	protected @Nullable String getFullyQualifiedMethodNameFromDescriptor(TestDescriptor descriptor) {
 		return descriptor.getSource() //
 				.filter(source -> source instanceof MethodSource) //
 				.map(methodSource -> getFullyQualifiedMethodNameWithoutParameters(((MethodSource) methodSource))) //

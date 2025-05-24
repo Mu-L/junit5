@@ -16,13 +16,14 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.function.Supplier;
 
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.extension.InvocationInterceptor.Invocation;
 import org.junit.platform.commons.util.UnrecoverableExceptions;
 
 /**
  * @since 5.5
  */
-class SameThreadTimeoutInvocation<T> implements Invocation<T> {
+class SameThreadTimeoutInvocation<T extends @Nullable Object> implements Invocation<T> {
 
 	private final Invocation<T> delegate;
 	private final TimeoutDuration timeout;
@@ -39,10 +40,11 @@ class SameThreadTimeoutInvocation<T> implements Invocation<T> {
 		this.preInterruptCallback = preInterruptCallback;
 	}
 
+	@SuppressWarnings("NullAway")
 	@Override
 	public T proceed() throws Throwable {
 		InterruptTask interruptTask = new InterruptTask(Thread.currentThread(), preInterruptCallback);
-		ScheduledFuture<?> future = executor.schedule(interruptTask, timeout.getValue(), timeout.getUnit());
+		ScheduledFuture<?> future = executor.schedule(interruptTask, timeout.value(), timeout.unit());
 		Throwable failure = null;
 		T result = null;
 		try {

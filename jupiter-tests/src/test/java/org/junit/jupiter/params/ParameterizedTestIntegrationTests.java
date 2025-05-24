@@ -63,6 +63,7 @@ import java.util.TreeSet;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
@@ -224,7 +225,7 @@ class ParameterizedTestIntegrationTests extends AbstractJupiterTestEngineTests {
 		assertFruitTable(fruit, rank, testInfo);
 	}
 
-	private void assertFruitTable(String fruit, double rank, TestInfo testInfo) {
+	private void assertFruitTable(@Nullable String fruit, double rank, TestInfo testInfo) {
 		String displayName = testInfo.getDisplayName();
 
 		if (fruit == null) {
@@ -928,8 +929,7 @@ class ParameterizedTestIntegrationTests extends AbstractJupiterTestEngineTests {
 		void reportsContainerWithAssumptionFailureInMethodSourceAsAborted() {
 			execute("assumptionFailureInMethodSourceFactoryMethod", String.class).allEvents().assertThatEvents() //
 					.haveExactly(1, event(container("test-template:assumptionFailureInMethodSourceFactoryMethod"), //
-						abortedWithReason(instanceOf(TestAbortedException.class),
-							message("Assumption failed: nothing to test"))));
+						abortedWithReason(instanceOf(TestAbortedException.class), message("nothing to test"))));
 		}
 
 		@Test
@@ -1175,8 +1175,8 @@ class ParameterizedTestIntegrationTests extends AbstractJupiterTestEngineTests {
 			var results = execute(ArgumentCountValidationMode.STRICT, UnusedArgumentsTestCase.class,
 				"testWithTwoUnusedStringArgumentsProvider", String.class);
 			results.allEvents().assertThatEvents() //
-					.haveExactly(1, event(finishedWithFailure(message(String.format(
-						"Configuration error: @ParameterizedTest consumes 1 parameter but there were 2 arguments provided.%nNote: the provided arguments were [foo, unused1]")))));
+					.haveExactly(1, event(finishedWithFailure(message(
+						"Configuration error: @ParameterizedTest consumes 1 parameter but there were 2 arguments provided.%nNote: the provided arguments were [foo, unused1]".formatted()))));
 		}
 
 		@Test
@@ -1184,8 +1184,8 @@ class ParameterizedTestIntegrationTests extends AbstractJupiterTestEngineTests {
 			var results = execute(ArgumentCountValidationMode.STRICT, UnusedArgumentsTestCase.class,
 				"testWithMethodSourceProvidingUnusedArguments", String.class);
 			results.allEvents().assertThatEvents() //
-					.haveExactly(1, event(finishedWithFailure(message(String.format(
-						"Configuration error: @ParameterizedTest consumes 1 parameter but there were 2 arguments provided.%nNote: the provided arguments were [foo, unused1]")))));
+					.haveExactly(1, event(finishedWithFailure(message(
+						"Configuration error: @ParameterizedTest consumes 1 parameter but there were 2 arguments provided.%nNote: the provided arguments were [foo, unused1]".formatted()))));
 		}
 
 		@Test
@@ -1193,8 +1193,8 @@ class ParameterizedTestIntegrationTests extends AbstractJupiterTestEngineTests {
 			var results = execute(ArgumentCountValidationMode.NONE, UnusedArgumentsTestCase.class,
 				"testWithStrictArgumentCountValidation", String.class);
 			results.allEvents().assertThatEvents() //
-					.haveExactly(1, event(finishedWithFailure(message(String.format(
-						"Configuration error: @ParameterizedTest consumes 1 parameter but there were 2 arguments provided.%nNote: the provided arguments were [foo, unused1]")))));
+					.haveExactly(1, event(finishedWithFailure(message(
+						"Configuration error: @ParameterizedTest consumes 1 parameter but there were 2 arguments provided.%nNote: the provided arguments were [foo, unused1]".formatted()))));
 		}
 
 		@Test
@@ -1202,8 +1202,8 @@ class ParameterizedTestIntegrationTests extends AbstractJupiterTestEngineTests {
 			var results = execute(ArgumentCountValidationMode.STRICT, UnusedArgumentsTestCase.class,
 				"testWithCsvSourceContainingDifferentNumbersOfArguments", String.class);
 			results.allEvents().assertThatEvents() //
-					.haveExactly(1, event(finishedWithFailure(message(String.format(
-						"Configuration error: @ParameterizedTest consumes 1 parameter but there were 2 arguments provided.%nNote: the provided arguments were [foo, unused1]"))))) //
+					.haveExactly(1, event(finishedWithFailure(message(
+						"Configuration error: @ParameterizedTest consumes 1 parameter but there were 2 arguments provided.%nNote: the provided arguments were [foo, unused1]".formatted())))) //
 					.haveExactly(1,
 						event(test(), displayName("[2] argument=bar"), finishedWithFailure(message("bar"))));
 		}
@@ -1231,8 +1231,8 @@ class ParameterizedTestIntegrationTests extends AbstractJupiterTestEngineTests {
 			var results = execute(ArgumentCountValidationMode.STRICT, UnusedArgumentsTestCase.class,
 				"testWithEvaluationReportingArgumentsProvider", String.class);
 			results.allEvents().assertThatEvents() //
-					.haveExactly(1, event(finishedWithFailure(message(String.format(
-						"Configuration error: @ParameterizedTest consumes 1 parameter but there were 2 arguments provided.%nNote: the provided arguments were [foo, unused]")))));
+					.haveExactly(1, event(finishedWithFailure(message(
+						"Configuration error: @ParameterizedTest consumes 1 parameter but there were 2 arguments provided.%nNote: the provided arguments were [foo, unused]".formatted()))));
 			results.allEvents().reportingEntryPublished().assertThatEvents() //
 					.haveExactly(1, event(EventConditions.reportEntry(Map.of("evaluated", "true"))));
 		}
@@ -1928,8 +1928,8 @@ class ParameterizedTestIntegrationTests extends AbstractJupiterTestEngineTests {
 		}
 
 		static List<String> assumptionFailureInMethodSourceFactoryMethod() {
-			Assumptions.assumeFalse(true, "nothing to test");
-			return null;
+			Assumptions.abort("nothing to test");
+			return List.of();
 		}
 
 	}
@@ -2508,7 +2508,8 @@ class ParameterizedTestIntegrationTests extends AbstractJupiterTestEngineTests {
 		record ArgumentConverterWithConstructorParameter(String value) implements ArgumentConverter {
 
 			@Override
-			public Object convert(Object source, ParameterContext context) throws ArgumentConversionException {
+			public Object convert(@Nullable Object source, ParameterContext context)
+					throws ArgumentConversionException {
 				return value;
 			}
 		}
@@ -2593,7 +2594,7 @@ class ParameterizedTestIntegrationTests extends AbstractJupiterTestEngineTests {
 	private static class StringLengthConverter implements ArgumentConverter {
 
 		@Override
-		public Object convert(Object source, ParameterContext context) throws ArgumentConversionException {
+		public Object convert(@Nullable Object source, ParameterContext context) throws ArgumentConversionException {
 			return String.valueOf(source).length();
 		}
 	}
@@ -2610,7 +2611,7 @@ class ParameterizedTestIntegrationTests extends AbstractJupiterTestEngineTests {
 	private static class ErroneousConverter implements ArgumentConverter {
 
 		@Override
-		public Object convert(Object source, ParameterContext context) throws ArgumentConversionException {
+		public Object convert(@Nullable Object source, ParameterContext context) throws ArgumentConversionException {
 			throw new ArgumentConversionException("something went horribly wrong");
 		}
 	}

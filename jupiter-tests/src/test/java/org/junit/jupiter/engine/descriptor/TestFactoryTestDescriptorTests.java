@@ -163,7 +163,7 @@ class TestFactoryTestDescriptorTests {
 			extensionContext = mock();
 			isClosed = false;
 
-			context = new JupiterEngineExecutionContext(null, null, null) //
+			context = new JupiterEngineExecutionContext(mock(), mock(), mock()) //
 					.extend() //
 					.withThrowableCollector(new OpenTest4JAwareThrowableCollector()) //
 					.withExtensionContext(extensionContext) //
@@ -203,13 +203,7 @@ class TestFactoryTestDescriptorTests {
 
 	}
 
-	private static class CustomStreamTestCase {
-
-		private final Stream<?> mockStream;
-
-		CustomStreamTestCase(Stream<?> mockStream) {
-			this.mockStream = mockStream;
-		}
+	private record CustomStreamTestCase(Stream<?> mockStream) {
 
 		@TestFactory
 		Stream<?> customStream() {

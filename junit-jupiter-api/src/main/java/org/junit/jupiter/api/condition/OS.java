@@ -15,6 +15,7 @@ import static org.apiguardian.api.API.Status.STABLE;
 import java.util.Locale;
 
 import org.apiguardian.api.API;
+import org.jspecify.annotations.Nullable;
 import org.junit.platform.commons.logging.Logger;
 import org.junit.platform.commons.logging.LoggerFactory;
 import org.junit.platform.commons.util.StringUtils;
@@ -94,23 +95,24 @@ public enum OS {
 
 	private static final Logger logger = LoggerFactory.getLogger(OS.class);
 
+	@Nullable
 	private static final OS CURRENT_OS = determineCurrentOs();
 
 	/**
-	 * Get the current operating system.
+	 * {@return the current operating system, if known; otherwise, {@code null}}
 	 *
 	 * @since 5.9
 	 */
 	@API(status = STABLE, since = "5.10")
-	public static OS current() {
+	public static @Nullable OS current() {
 		return CURRENT_OS;
 	}
 
-	private static OS determineCurrentOs() {
+	private static @Nullable OS determineCurrentOs() {
 		return parse(System.getProperty("os.name"));
 	}
 
-	static OS parse(String osName) {
+	static @Nullable OS parse(String osName) {
 		if (StringUtils.isBlank(osName)) {
 			logger.debug(
 				() -> "JVM system property 'os.name' is undefined. It is therefore not possible to detect the current OS.");

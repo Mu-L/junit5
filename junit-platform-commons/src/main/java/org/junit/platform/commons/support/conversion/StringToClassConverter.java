@@ -10,6 +10,7 @@
 
 package org.junit.platform.commons.support.conversion;
 
+import org.jspecify.annotations.Nullable;
 import org.junit.platform.commons.support.ReflectionSupport;
 
 class StringToClassConverter implements StringToObjectConverter {
@@ -25,7 +26,7 @@ class StringToClassConverter implements StringToObjectConverter {
 	}
 
 	@Override
-	public Object convert(String className, Class<?> targetType, ClassLoader classLoader) throws Exception {
+	public @Nullable Object convert(String className, Class<?> targetType, ClassLoader classLoader) throws Exception {
 		// @formatter:off
 		return ReflectionSupport.tryToLoadClass(className, classLoader)
 				.getOrThrow(cause -> new ConversionException(

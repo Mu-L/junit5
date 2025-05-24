@@ -11,7 +11,6 @@
 package org.junit.jupiter.engine.descriptor;
 
 import static java.util.stream.Collectors.toCollection;
-import static java.util.stream.Collectors.toList;
 import static org.apiguardian.api.API.Status.INTERNAL;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_METHOD;
 import static org.junit.jupiter.engine.descriptor.LifecycleMethodUtils.validateClassTemplateInvocationLifecycleMethodsAreDeclaredCorrectly;
@@ -108,9 +107,9 @@ public class ClassTemplateTestDescriptor extends ClassBasedTestDescriptor implem
 			copy.childrenPrototypes.add(newChild);
 		});
 		this.childrenPrototypesByIndex.forEach((index, oldChildren) -> {
-			List<TestDescriptor> newChildren = oldChildren.stream() //
+			List<? extends TestDescriptor> newChildren = oldChildren.stream() //
 					.map(oldChild -> ((JupiterTestDescriptor) oldChild).copyIncludingDescendants(uniqueIdTransformer)) //
-					.collect(toList());
+					.toList();
 			copy.childrenPrototypesByIndex.put(index, newChildren);
 		});
 		return copy;
@@ -134,8 +133,8 @@ public class ClassTemplateTestDescriptor extends ClassBasedTestDescriptor implem
 		new LinkedHashSet<>(this.children).forEach(child -> child.accept(TestDescriptor::prune));
 		// Second iteration to avoid processing children that were pruned in the first iteration
 		this.children.forEach(child -> {
-			if (child instanceof ClassTemplateInvocationTestDescriptor) {
-				int index = ((ClassTemplateInvocationTestDescriptor) child).getIndex();
+			if (child instanceof ClassTemplateInvocationTestDescriptor descriptor) {
+				int index = descriptor.getIndex();
 				this.dynamicDescendantFilter.allowIndex(index - 1);
 				this.childrenPrototypesByIndex.put(index, child.getChildren());
 			}
@@ -180,8 +179,8 @@ public class ClassTemplateTestDescriptor extends ClassBasedTestDescriptor implem
 	public Set<ExclusiveResource> getExclusiveResources() {
 		Set<ExclusiveResource> result = determineExclusiveResources().collect(toCollection(HashSet::new));
 		Visitor visitor = testDescriptor -> {
-			if (testDescriptor instanceof Node) {
-				result.addAll(((Node<?>) testDescriptor).getExclusiveResources());
+			if (testDescriptor instanceof Node<?> node) {
+				result.addAll(node.getExclusiveResources());
 			}
 		};
 		this.childrenPrototypes.forEach(child -> child.accept(visitor));
@@ -221,7 +220,7 @@ public class ClassTemplateTestDescriptor extends ClassBasedTestDescriptor implem
 
 		@Override
 		protected String getNoRegisteredProviderErrorMessage() {
-			return String.format("You must register at least one %s that supports @%s class [%s]",
+			return "You must register at least one %s that supports @%s class [%s]".formatted(
 				ClassTemplateInvocationContextProvider.class.getSimpleName(), ClassTemplate.class.getSimpleName(),
 				getTestClass().getName());
 		}

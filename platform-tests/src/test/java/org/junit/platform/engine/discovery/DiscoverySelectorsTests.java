@@ -37,13 +37,11 @@ import java.io.File;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.DisplayName;
@@ -71,6 +69,7 @@ class DiscoverySelectorsTests {
 	@Nested
 	class SelectUriTests {
 
+		@SuppressWarnings({ "DataFlowIssue", "NullAway" })
 		@Test
 		void selectUriByName() {
 			assertViolatesPrecondition(() -> selectUri((String) null));
@@ -83,6 +82,7 @@ class DiscoverySelectorsTests {
 			assertEquals(uri, selector.getUri().toString());
 		}
 
+		@SuppressWarnings({ "DataFlowIssue", "NullAway" })
 		@Test
 		void selectUriByURI() {
 			assertViolatesPrecondition(() -> selectUri((URI) null));
@@ -108,6 +108,7 @@ class DiscoverySelectorsTests {
 					.isEqualTo(URI.create("https://junit.org"));
 		}
 
+		@SuppressWarnings({ "DataFlowIssue", "NullAway" })
 		@Test
 		void selectFileByName() {
 			assertViolatesPrecondition(() -> selectFile((String) null));
@@ -118,9 +119,10 @@ class DiscoverySelectorsTests {
 			var selector = selectFile(path);
 			assertEquals(path, selector.getRawPath());
 			assertEquals(new File(path), selector.getFile());
-			assertEquals(Paths.get(path), selector.getPath());
+			assertEquals(Path.of(path), selector.getPath());
 		}
 
+		@SuppressWarnings({ "DataFlowIssue", "NullAway" })
 		@Test
 		void selectFileByNameAndPosition() {
 			var filePosition = FilePosition.from(12, 34);
@@ -132,10 +134,11 @@ class DiscoverySelectorsTests {
 			var selector = selectFile(path, filePosition);
 			assertEquals(path, selector.getRawPath());
 			assertEquals(new File(path), selector.getFile());
-			assertEquals(Paths.get(path), selector.getPath());
+			assertEquals(Path.of(path), selector.getPath());
 			assertEquals(filePosition, selector.getPosition().orElseThrow());
 		}
 
+		@SuppressWarnings({ "DataFlowIssue", "NullAway" })
 		@Test
 		void selectFileByFileReference() throws Exception {
 			assertViolatesPrecondition(() -> selectFile((File) null));
@@ -149,9 +152,10 @@ class DiscoverySelectorsTests {
 			var selector = selectFile(file);
 			assertEquals(path, selector.getRawPath());
 			assertEquals(file.getCanonicalFile(), selector.getFile());
-			assertEquals(Paths.get(path), selector.getPath());
+			assertEquals(Path.of(path), selector.getPath());
 		}
 
+		@SuppressWarnings({ "DataFlowIssue", "NullAway" })
 		@Test
 		void selectFileByFileReferenceAndPosition() throws Exception {
 			var filePosition = FilePosition.from(12, 34);
@@ -166,7 +170,7 @@ class DiscoverySelectorsTests {
 			var selector = selectFile(file, filePosition);
 			assertEquals(path, selector.getRawPath());
 			assertEquals(file.getCanonicalFile(), selector.getFile());
-			assertEquals(Paths.get(path), selector.getPath());
+			assertEquals(Path.of(path), selector.getPath());
 			assertEquals(FilePosition.from(12, 34), selector.getPosition().orElseThrow());
 		}
 
@@ -184,7 +188,7 @@ class DiscoverySelectorsTests {
 					.asInstanceOf(type(FileSelector.class)) //
 					.extracting(FileSelector::getRawPath, FileSelector::getFile, FileSelector::getPath,
 						FileSelector::getPosition) //
-					.containsExactly(path, new File(path), Paths.get(path), Optional.empty());
+					.containsExactly(path, new File(path), Path.of(path), Optional.empty());
 		}
 
 		@Test
@@ -197,7 +201,7 @@ class DiscoverySelectorsTests {
 					.asInstanceOf(type(FileSelector.class)) //
 					.extracting(FileSelector::getRawPath, FileSelector::getFile, FileSelector::getPath,
 						FileSelector::getPosition) //
-					.containsExactly(absolutePath, new File(absolutePath), Paths.get(absolutePath), Optional.empty());
+					.containsExactly(absolutePath, new File(absolutePath), Path.of(absolutePath), Optional.empty());
 		}
 
 		@Test
@@ -210,7 +214,7 @@ class DiscoverySelectorsTests {
 					.asInstanceOf(type(FileSelector.class)) //
 					.extracting(FileSelector::getRawPath, FileSelector::getFile, FileSelector::getPath,
 						FileSelector::getPosition) //
-					.containsExactly(path, new File(path), Paths.get(path), Optional.of(filePosition));
+					.containsExactly(path, new File(path), Path.of(path), Optional.of(filePosition));
 		}
 
 		@Test
@@ -224,10 +228,11 @@ class DiscoverySelectorsTests {
 					.asInstanceOf(type(FileSelector.class)) //
 					.extracting(FileSelector::getRawPath, FileSelector::getFile, FileSelector::getPath,
 						FileSelector::getPosition) //
-					.containsExactly(absolutePath, new File(absolutePath), Paths.get(absolutePath),
+					.containsExactly(absolutePath, new File(absolutePath), Path.of(absolutePath),
 						Optional.of(filePosition));
 		}
 
+		@SuppressWarnings({ "DataFlowIssue", "NullAway" })
 		@Test
 		void selectDirectoryByName() {
 			assertViolatesPrecondition(() -> selectDirectory((String) null));
@@ -238,9 +243,10 @@ class DiscoverySelectorsTests {
 			var selector = selectDirectory(path);
 			assertEquals(path, selector.getRawPath());
 			assertEquals(new File(path), selector.getDirectory());
-			assertEquals(Paths.get(path), selector.getPath());
+			assertEquals(Path.of(path), selector.getPath());
 		}
 
+		@SuppressWarnings({ "DataFlowIssue", "NullAway" })
 		@Test
 		void selectDirectoryByFileReference() throws Exception {
 			assertViolatesPrecondition(() -> selectDirectory((File) null));
@@ -254,7 +260,7 @@ class DiscoverySelectorsTests {
 			var selector = selectDirectory(directory);
 			assertEquals(path, selector.getRawPath());
 			assertEquals(directory.getCanonicalFile(), selector.getDirectory());
-			assertEquals(Paths.get(path), selector.getPath());
+			assertEquals(Path.of(path), selector.getPath());
 		}
 
 	}
@@ -272,7 +278,7 @@ class DiscoverySelectorsTests {
 					.asInstanceOf(type(DirectorySelector.class)) //
 					.extracting(DirectorySelector::getRawPath, DirectorySelector::getDirectory,
 						DirectorySelector::getPath) //
-					.containsExactly(path, new File(path), Paths.get(path));
+					.containsExactly(path, new File(path), Path.of(path));
 		}
 
 		@Test
@@ -285,9 +291,10 @@ class DiscoverySelectorsTests {
 					.asInstanceOf(type(DirectorySelector.class)) //
 					.extracting(DirectorySelector::getRawPath, DirectorySelector::getDirectory,
 						DirectorySelector::getPath) //
-					.containsExactly(path, new File(path), Paths.get(path));
+					.containsExactly(path, new File(path), Path.of(path));
 		}
 
+		@SuppressWarnings({ "DataFlowIssue", "NullAway" })
 		@Test
 		void selectClasspathResourcesPreconditions() {
 			assertViolatesPrecondition(() -> selectClasspathResource((String) null));
@@ -331,6 +338,7 @@ class DiscoverySelectorsTests {
 			assertViolatesPrecondition(selector::getClasspathResources);
 		}
 
+		@SuppressWarnings({ "DataFlowIssue", "NullAway" })
 		@Test
 		void selectClasspathResourcesWithFilePosition() {
 			var filePosition = FilePosition.from(12, 34);
@@ -398,7 +406,7 @@ class DiscoverySelectorsTests {
 
 			@Override
 			public URI getUri() {
-				return null;
+				throw new UnsupportedOperationException();
 			}
 		}
 	}
@@ -421,6 +429,7 @@ class DiscoverySelectorsTests {
 					.isEqualTo("java.base");
 		}
 
+		@SuppressWarnings({ "DataFlowIssue", "NullAway" })
 		@Test
 		void selectModuleByNamePreconditions() {
 			assertViolatesPrecondition(() -> selectModule(null));
@@ -431,10 +440,11 @@ class DiscoverySelectorsTests {
 		@Test
 		void selectModulesByNames() {
 			var selectors = selectModules(Set.of("a", "b"));
-			var names = selectors.stream().map(ModuleSelector::getModuleName).collect(Collectors.toList());
+			var names = selectors.stream().map(ModuleSelector::getModuleName).toList();
 			assertThat(names).containsExactlyInAnyOrder("b", "a");
 		}
 
+		@SuppressWarnings({ "DataFlowIssue", "NullAway" })
 		@Test
 		void selectModulesByNamesPreconditions() {
 			assertViolatesPrecondition(() -> selectModules(null));
@@ -468,14 +478,14 @@ class DiscoverySelectorsTests {
 
 		@Test
 		void selectClasspathRootsWithNonExistingDirectory() {
-			var selectors = selectClasspathRoots(Set.of(Paths.get("some", "local", "path")));
+			var selectors = selectClasspathRoots(Set.of(Path.of("some", "local", "path")));
 
 			assertThat(selectors).isEmpty();
 		}
 
 		@Test
 		void selectClasspathRootsWithNonExistingJarFile() {
-			var selectors = selectClasspathRoots(Set.of(Paths.get("some.jar")));
+			var selectors = selectClasspathRoots(Set.of(Path.of("some.jar")));
 
 			assertThat(selectors).isEmpty();
 		}
@@ -490,7 +500,7 @@ class DiscoverySelectorsTests {
 		@Test
 		void selectClasspathRootsWithExistingJarFile() throws Exception {
 			var jarUri = requireNonNull(getClass().getResource("/jartest.jar")).toURI();
-			var jarFile = Paths.get(jarUri);
+			var jarFile = Path.of(jarUri);
 
 			var selectors = selectClasspathRoots(Set.of(jarFile));
 
@@ -534,6 +544,7 @@ class DiscoverySelectorsTests {
 	@Nested
 	class SelectMethodTests {
 
+		@SuppressWarnings({ "DataFlowIssue", "NullAway" })
 		@Test
 		@DisplayName("Preconditions: selectMethod(className, methodName)")
 		void selectMethodByClassNameAndMethodNamePreconditions() {
@@ -545,6 +556,7 @@ class DiscoverySelectorsTests {
 			assertViolatesPrecondition(() -> selectMethod("   ", "method"));
 		}
 
+		@SuppressWarnings({ "DataFlowIssue", "NullAway" })
 		@Test
 		@DisplayName("Preconditions: selectMethod(className, methodName, parameterTypeNames)")
 		void selectMethodByClassNameMethodNameAndParameterTypeNamesPreconditions() {
@@ -557,6 +569,7 @@ class DiscoverySelectorsTests {
 			assertViolatesPrecondition(() -> selectMethod("TestClass", "method", (String) null));
 		}
 
+		@SuppressWarnings({ "DataFlowIssue", "NullAway" })
 		@Test
 		@DisplayName("Preconditions: selectMethod(className, methodName, parameterTypes)")
 		void selectMethodByClassNameMethodNameAndParameterTypesPreconditions() {
@@ -570,6 +583,7 @@ class DiscoverySelectorsTests {
 			assertViolatesPrecondition(() -> selectMethod("TestClass", "method", new Class<?>[] { int.class, null }));
 		}
 
+		@SuppressWarnings({ "DataFlowIssue", "NullAway" })
 		@Test
 		@DisplayName("Preconditions: selectMethod(class, methodName)")
 		void selectMethodByClassAndMethodNamePreconditions() {
@@ -579,6 +593,7 @@ class DiscoverySelectorsTests {
 			assertViolatesPrecondition(() -> selectMethod((Class<?>) null, "method"));
 		}
 
+		@SuppressWarnings({ "DataFlowIssue", "NullAway" })
 		@Test
 		@DisplayName("Preconditions: selectMethod(class, methodName, parameterTypeNames)")
 		void selectMethodByClassMethodNameAndParameterTypeNamesPreconditions() {
@@ -589,6 +604,7 @@ class DiscoverySelectorsTests {
 			assertViolatesPrecondition(() -> selectMethod(testClass(), "method", (String) null));
 		}
 
+		@SuppressWarnings({ "DataFlowIssue", "NullAway" })
 		@Test
 		@DisplayName("Preconditions: selectMethod(class, method)")
 		void selectMethodByClassAndMethodPreconditions() {
@@ -824,7 +840,7 @@ class DiscoverySelectorsTests {
 			var className = "org.example.CalculatorSpec";
 			var methodName = "#a plus #b equals #c";
 			var methodParameters = "int, int, int";
-			var fqmn = String.format("%s#%s(%s)", className, methodName, methodParameters);
+			var fqmn = "%s#%s(%s)".formatted(className, methodName, methodParameters);
 
 			var selector = selectMethod(fqmn);
 			assertEquals(className, selector.getClassName());
@@ -875,7 +891,7 @@ class DiscoverySelectorsTests {
 			var className = "org.example.KotlinTestCase";
 			var methodName = "test name ends with parentheses()";
 			var methodParameters = "int, int, int";
-			var fqmn = String.format("%s#%s(%s)", className, methodName, methodParameters);
+			var fqmn = "%s#%s(%s)".formatted(className, methodName, methodParameters);
 
 			var selector = selectMethod(fqmn);
 
@@ -1132,6 +1148,7 @@ class DiscoverySelectorsTests {
 			assertThat(parseIdentifier(selector)).isEqualTo(selector);
 		}
 
+		@SuppressWarnings({ "DataFlowIssue", "NullAway" })
 		@Test
 		void selectNestedClassPreconditions() {
 			assertViolatesPrecondition(() -> selectNestedClass(null, "ClassName"));
@@ -1299,6 +1316,7 @@ class DiscoverySelectorsTests {
 			assertThat(parseIdentifier(selector)).isEqualTo(selector);
 		}
 
+		@SuppressWarnings({ "DataFlowIssue", "NullAway" })
 		@Test
 		@DisplayName("Preconditions: selectNestedMethod(enclosingClassNames, nestedClassName, methodName)")
 		void selectNestedMethodByEnclosingClassNamesAndMethodNamePreconditions() {
@@ -1310,6 +1328,7 @@ class DiscoverySelectorsTests {
 			assertViolatesPrecondition(() -> selectNestedMethod(List.of("ClassName"), "ClassName", " "));
 		}
 
+		@SuppressWarnings({ "DataFlowIssue", "NullAway" })
 		@Test
 		@DisplayName("Preconditions: selectNestedMethod(enclosingClassNames, nestedClassName, methodName, parameterTypeNames)")
 		void selectNestedMethodByEnclosingClassNamesMethodNameAndParameterTypeNamesPreconditions() {
@@ -1326,6 +1345,7 @@ class DiscoverySelectorsTests {
 		/**
 		 * @since 1.10
 		 */
+		@SuppressWarnings({ "DataFlowIssue", "NullAway" })
 		@Test
 		@DisplayName("Preconditions: selectNestedMethod(enclosingClassNames, nestedClassName, methodName, parameterTypes)")
 		void selectNestedMethodByEnclosingClassNamesMethodNameAndParameterTypesPreconditions() {
@@ -1344,6 +1364,7 @@ class DiscoverySelectorsTests {
 		/**
 		 * @since 1.10
 		 */
+		@SuppressWarnings({ "DataFlowIssue", "NullAway" })
 		@Test
 		@DisplayName("Preconditions: selectNestedMethod(enclosingClasses, nestedClass, methodName, parameterTypes)")
 		void selectNestedMethodByEnclosingClassesClassMethodNameAndParameterTypesPreconditions() {
@@ -1440,7 +1461,7 @@ class DiscoverySelectorsTests {
 	}
 
 	private static String fqmnWithParamNames(String... params) {
-		return String.format("%s#%s(%s)", DiscoverySelectorsTests.class.getName(), "myTest", join(", ", params));
+		return "%s#%s(%s)".formatted(DiscoverySelectorsTests.class.getName(), "myTest", join(", ", params));
 	}
 
 	interface TestInterface {

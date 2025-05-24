@@ -51,17 +51,17 @@ class ExcludePackageNameFilter implements PackageNameFilter {
 	}
 
 	private String formatInclusionReason(String packageName) {
-		return String.format("Package name [%s] does not match any excluded names: %s", packageName,
+		return "Package name [%s] does not match any excluded names: %s".formatted(packageName,
 			this.patternDescription);
 	}
 
 	private String formatExclusionReason(String packageName, String matchedName) {
-		return String.format("Package name [%s] matches excluded name: '%s'", packageName, matchedName);
+		return "Package name [%s] matches excluded name: '%s'".formatted(packageName, matchedName);
 	}
 
 	@Override
 	public Predicate<String> toPredicate() {
-		return packageName -> !findMatchingName(packageName).isPresent();
+		return packageName -> findMatchingName(packageName).isEmpty();
 	}
 
 	private Optional<String> findMatchingName(String packageName) {
@@ -71,8 +71,7 @@ class ExcludePackageNameFilter implements PackageNameFilter {
 
 	@Override
 	public String toString() {
-		return String.format(
-			"%s that excludes packages whose names are either equal to or start with one of the following: %s",
+		return "%s that excludes packages whose names are either equal to or start with one of the following: %s".formatted(
 			getClass().getSimpleName(), this.patternDescription);
 	}
 

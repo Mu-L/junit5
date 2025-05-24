@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 import org.apiguardian.api.API;
+import org.jspecify.annotations.Nullable;
 import org.junit.platform.commons.JUnitException;
 import org.junit.platform.commons.logging.Logger;
 import org.junit.platform.commons.logging.LoggerFactory;
@@ -54,6 +55,8 @@ public class RunnerTestDescriptor extends VintageTestDescriptor {
 	private Runner runner;
 	private final boolean ignored;
 	private boolean wasFiltered;
+
+	@Nullable
 	private List<Filter> filters = new ArrayList<>();
 
 	public RunnerTestDescriptor(UniqueId uniqueId, Class<?> testClass, Runner runner, boolean ignored) {
@@ -85,10 +88,10 @@ public class RunnerTestDescriptor extends VintageTestDescriptor {
 	}
 
 	private boolean tryToFilterRunner(Description description) {
-		if (runner instanceof Filterable) {
+		if (runner instanceof Filterable filterable) {
 			ExcludeDescriptionFilter filter = new ExcludeDescriptionFilter(description);
 			try {
-				((Filterable) runner).filter(filter);
+				filterable.filter(filter);
 			}
 			catch (NoTestsRemainException ignore) {
 				// it's safe to ignore this exception because childless TestDescriptors will get pruned
@@ -163,7 +166,7 @@ public class RunnerTestDescriptor extends VintageTestDescriptor {
 	}
 
 	private Runner getRunnerToReport() {
-		return (runner instanceof RunnerDecorator) ? ((RunnerDecorator) runner).getDecoratedRunner() : runner;
+		return (runner instanceof RunnerDecorator decorator) ? decorator.getDecoratedRunner() : runner;
 	}
 
 	public boolean isIgnored() {
@@ -172,8 +175,8 @@ public class RunnerTestDescriptor extends VintageTestDescriptor {
 
 	public void setExecutorService(ExecutorService executorService) {
 		Runner runner = getRunnerToReport();
-		if (runner instanceof ParentRunner) {
-			((ParentRunner<?>) runner).setScheduler(new RunnerScheduler() {
+		if (runner instanceof ParentRunner<?> parentRunner) {
+			parentRunner.setScheduler(new RunnerScheduler() {
 
 				private final List<Future<?>> futures = new CopyOnWriteArrayList<>();
 

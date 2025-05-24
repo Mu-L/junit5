@@ -17,17 +17,18 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.extension.InvocationInterceptor.Invocation;
 import org.junit.jupiter.api.extension.ReflectiveInvocationContext;
-import org.junit.platform.commons.support.ReflectionSupport;
+import org.junit.jupiter.engine.support.MethodReflectionUtils;
 
-class MethodInvocation<T> implements Invocation<T>, ReflectiveInvocationContext<Method> {
+class MethodInvocation<T extends @Nullable Object> implements Invocation<T>, ReflectiveInvocationContext<Method> {
 
 	private final Method method;
 	private final Optional<Object> target;
-	private final Object[] arguments;
+	private final @Nullable Object[] arguments;
 
-	MethodInvocation(Method method, Optional<Object> target, Object[] arguments) {
+	MethodInvocation(Method method, Optional<Object> target, @Nullable Object[] arguments) {
 		this.method = method;
 		this.target = target;
 		this.arguments = arguments;
@@ -39,7 +40,6 @@ class MethodInvocation<T> implements Invocation<T>, ReflectiveInvocationContext<
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public Optional<Object> getTarget() {
 		return this.target;
 	}
@@ -55,9 +55,10 @@ class MethodInvocation<T> implements Invocation<T>, ReflectiveInvocationContext<
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({ "unchecked", "NullAway" })
 	public T proceed() {
-		return (T) ReflectionSupport.invokeMethod(this.method, this.target.orElse(null), this.arguments);
+		var actualTarget = this.target.orElse(null);
+		return (T) MethodReflectionUtils.invoke(this.method, actualTarget, this.arguments);
 	}
 
 }

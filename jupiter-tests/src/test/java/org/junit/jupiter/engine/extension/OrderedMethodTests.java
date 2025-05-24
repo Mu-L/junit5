@@ -34,6 +34,7 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.regex.Pattern;
 
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
@@ -84,39 +85,17 @@ class OrderedMethodTests {
 	}
 
 	@Test
-	void alphanumeric() {
-		Class<?> testClass = AlphanumericTestCase.class;
+	void methodName() {
+		Class<?> testClass = AMethodNameTestCase.class;
 
 		// The name of the base class MUST start with a letter alphanumerically
-		// greater than "A" so that BaseTestCase comes after AlphanumericTestCase
+		// greater than "A" so that BaseTestCase comes after AMethodNameTestCase
 		// if methods are sorted by class name for the fallback ordering if two
 		// methods have the same name but different parameter lists. Note, however,
-		// that Alphanumeric actually does not order methods like that, but we want
+		// that MethodName actually does not order methods like that, but we want
 		// this check to remain in place to ensure that the ordering does not rely
 		// on the class names.
 		assertThat(testClass.getSuperclass().getName()).isGreaterThan(testClass.getName());
-
-		var tests = executeTestsInParallel(testClass, Random.class);
-
-		tests.assertStatistics(stats -> stats.succeeded(callSequence.size()));
-
-		assertThat(callSequence).containsExactly("$()", "AAA()", "AAA(org.junit.jupiter.api.TestInfo)",
-			"AAA(org.junit.jupiter.api.TestReporter)", "ZZ_Top()", "___()", "a1()", "a2()", "b()", "c()", "zzz()");
-		assertThat(threadNames).hasSize(1);
-	}
-
-	@Test
-	void methodName() {
-		Class<?> testClass = MethodNameTestCase.class;
-
-		// The name of the base class MUST start with a letter alphanumerically
-		// greater than "A" so that BaseTestCase comes after AlphanumericTestCase
-		// if methods are sorted by class name for the fallback ordering if two
-		// methods have the same name but different parameter lists. Note, however,
-		// that Alphanumeric actually does not order methods like that, but we want
-		// this check to remain in place to ensure that the ordering does not rely
-		// on the class names.
-		assertThat(testClass.getSuperclass().getName()).isLessThan(testClass.getName());
 
 		var tests = executeTestsInParallel(testClass, Random.class);
 
@@ -345,23 +324,24 @@ class OrderedMethodTests {
 				.containsSubsequence("test2()", "test4()");// removed item is re-added before ordered item
 	}
 
-	private EngineDiscoveryResults discoverTests(Class<?> testClass, Class<? extends MethodOrderer> defaultOrderer) {
+	private EngineDiscoveryResults discoverTests(Class<?> testClass,
+			@Nullable Class<? extends MethodOrderer> defaultOrderer) {
 		return testKit(testClass, defaultOrderer, Severity.INFO).discover();
 	}
 
-	private Events executeTestsInParallel(Class<?> testClass, Class<? extends MethodOrderer> defaultOrderer) {
+	private Events executeTestsInParallel(Class<?> testClass, @Nullable Class<? extends MethodOrderer> defaultOrderer) {
 		return executeTestsInParallel(testClass, defaultOrderer, Severity.INFO);
 	}
 
-	private Events executeTestsInParallel(Class<?> testClass, Class<? extends MethodOrderer> defaultOrderer,
+	private Events executeTestsInParallel(Class<?> testClass, @Nullable Class<? extends MethodOrderer> defaultOrderer,
 			Severity criticalSeverity) {
 		return testKit(testClass, defaultOrderer, criticalSeverity) //
 				.execute() //
 				.testEvents();
 	}
 
-	private static EngineTestKit.Builder testKit(Class<?> testClass, Class<? extends MethodOrderer> defaultOrderer,
-			Severity criticalSeverity) {
+	private static EngineTestKit.Builder testKit(Class<?> testClass,
+			@Nullable Class<? extends MethodOrderer> defaultOrderer, Severity criticalSeverity) {
 		var testKit = EngineTestKit.engine("junit-jupiter") //
 				.configurationParameter(PARALLEL_EXECUTION_ENABLED_PROPERTY_NAME, "true") //
 				.configurationParameter(DEFAULT_PARALLEL_EXECUTION_MODE, "concurrent") //
@@ -419,65 +399,12 @@ class OrderedMethodTests {
 
 	@SuppressWarnings({ "unused", "JUnitMalformedDeclaration" })
 	@TestMethodOrder(MethodName.class)
-	static class MethodNameTestCase extends BaseTestCase {
+	static class AMethodNameTestCase extends BaseTestCase {
 
 		@BeforeEach
 		void trackInvocations(TestInfo testInfo) {
 			var method = testInfo.getTestMethod().orElseThrow(AssertionError::new);
-			var signature = String.format("%s(%s)", method.getName(),
-				ClassUtils.nullSafeToString(method.getParameterTypes()));
-
-			callSequence.add(signature);
-			threadNames.add(Thread.currentThread().getName());
-		}
-
-		@TestFactory
-		DynamicTest b() {
-			return dynamicTest("dynamic", () -> {
-			});
-		}
-
-		@Test
-		void $() {
-		}
-
-		@Test
-		void ___() {
-		}
-
-		@Test
-		void AAA(TestReporter testReporter) {
-		}
-
-		@Test
-		void AAA(TestInfo testInfo) {
-		}
-
-		@Test
-		void ZZ_Top() {
-		}
-
-		@Test
-		void a1() {
-		}
-
-		@Test
-		void a2() {
-		}
-
-		@RepeatedTest(1)
-		void zzz() {
-		}
-	}
-
-	@SuppressWarnings({ "deprecation", "unused", "JUnitMalformedDeclaration" })
-	@TestMethodOrder(org.junit.jupiter.api.MethodOrderer.Alphanumeric.class)
-	static class AlphanumericTestCase extends BaseTestCase {
-
-		@BeforeEach
-		void trackInvocations(TestInfo testInfo) {
-			var method = testInfo.getTestMethod().orElseThrow(AssertionError::new);
-			var signature = String.format("%s(%s)", method.getName(),
+			var signature = "%s(%s)".formatted(method.getName(),
 				ClassUtils.nullSafeToString(method.getParameterTypes()));
 
 			callSequence.add(signature);
@@ -815,7 +742,7 @@ class OrderedMethodTests {
 			context.getMethodDescriptors().set(1, createMethodDescriptorImpersonator(method2));
 		}
 
-		@SuppressWarnings("unchecked")
+		@SuppressWarnings({ "unchecked", "DataFlowIssue", "NullAway" })
 		static <T> T createMethodDescriptorImpersonator(MethodDescriptor method) {
 			MethodDescriptor stub = new MethodDescriptor() {
 				@Override
@@ -835,12 +762,12 @@ class OrderedMethodTests {
 
 				@Override
 				public <A extends Annotation> Optional<A> findAnnotation(Class<A> annotationType) {
-					return null;
+					return Optional.empty();
 				}
 
 				@Override
 				public <A extends Annotation> List<A> findRepeatableAnnotations(Class<A> annotationType) {
-					return null;
+					return List.of();
 				}
 
 				@SuppressWarnings("EqualsWhichDoesntCheckParameterClass")

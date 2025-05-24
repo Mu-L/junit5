@@ -459,14 +459,15 @@ class ParameterizedTestDemo {
 
 	// end::explicit_conversion_example[]
 	static
+	@SuppressWarnings({ "NullableProblems", "NullAway" })
 	// tag::explicit_conversion_example_ToStringArgumentConverter[]
 	public class ToStringArgumentConverter extends SimpleArgumentConverter {
 
 		@Override
 		protected Object convert(Object source, Class<?> targetType) {
 			assertEquals(String.class, targetType, "Can only convert to String");
-			if (source instanceof Enum<?>) {
-				return ((Enum<?>) source).name();
+			if (source instanceof Enum<?> constant) {
+				return constant.name();
 			}
 			return String.valueOf(source);
 		}
@@ -474,6 +475,7 @@ class ParameterizedTestDemo {
 	// end::explicit_conversion_example_ToStringArgumentConverter[]
 
 	static
+	@SuppressWarnings({ "NullableProblems", "NullAway", "ConstantValue" })
 	// tag::explicit_conversion_example_TypedArgumentConverter[]
 	public class ToLengthArgumentConverter extends TypedArgumentConverter<String, Integer> {
 

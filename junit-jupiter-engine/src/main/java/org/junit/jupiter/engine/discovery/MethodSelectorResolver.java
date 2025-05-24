@@ -12,7 +12,6 @@ package org.junit.jupiter.engine.discovery;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.platform.engine.discovery.DiscoverySelectors.selectUniqueId;
 import static org.junit.platform.engine.support.discovery.SelectorResolver.Resolution.matches;
@@ -95,8 +94,7 @@ class MethodSelectorResolver implements SelectorResolver {
 		// @formatter:off
 		Set<Match> matches = methodTypes.stream()
 				.map(methodType -> methodType.resolve(enclosingClasses, testClass, method, context, configuration))
-				.filter(Optional::isPresent)
-				.map(Optional::get)
+				.flatMap(Optional::stream)
 				.map(testDescriptor -> matchFactory.apply(testDescriptor, expansionCallback(testDescriptor)))
 				.collect(toSet());
 		// @formatter:on
@@ -106,7 +104,7 @@ class MethodSelectorResolver implements SelectorResolver {
 				"Possible configuration error: method [%s] resulted in multiple TestDescriptors %s. "
 						+ "This is typically the result of annotating a method with multiple competing annotations "
 						+ "such as @Test, @RepeatedTest, @ParameterizedTest, @TestFactory, etc.",
-				method.toGenericString(), testDescriptors.map(d -> d.getClass().getName()).collect(toList()));
+				method.toGenericString(), testDescriptors.map(d -> d.getClass().getName()).toList());
 			issueReporter.reportIssue(
 				DiscoveryIssue.builder(Severity.WARNING, message).source(MethodSource.from(method)));
 		}
@@ -119,12 +117,10 @@ class MethodSelectorResolver implements SelectorResolver {
 		// @formatter:off
 		return methodTypes.stream()
 				.map(methodType -> methodType.resolveUniqueIdIntoTestDescriptor(uniqueId, context, configuration))
-				.filter(Optional::isPresent)
-				.map(Optional::get)
+				.flatMap(Optional::stream)
 				.map(testDescriptor -> {
 					boolean exactMatch = uniqueId.equals(testDescriptor.getUniqueId());
-					if (testDescriptor instanceof Filterable) {
-						Filterable filterable = (Filterable) testDescriptor;
+					if (testDescriptor instanceof Filterable filterable) {
 						if (exactMatch) {
 							filterable.getDynamicDescendantFilter().allowAll();
 						}
@@ -141,12 +137,10 @@ class MethodSelectorResolver implements SelectorResolver {
 
 	@Override
 	public Resolution resolve(IterationSelector selector, Context context) {
-		if (selector.getParentSelector() instanceof MethodSelector) {
-			MethodSelector methodSelector = (MethodSelector) selector.getParentSelector();
+		if (selector.getParentSelector() instanceof MethodSelector methodSelector) {
 			return resolve(context, emptyList(), methodSelector.getJavaClass(), methodSelector::getJavaMethod,
 				(testDescriptor, childSelectorsSupplier) -> {
-					if (testDescriptor instanceof Filterable) {
-						Filterable filterable = (Filterable) testDescriptor;
+					if (testDescriptor instanceof Filterable filterable) {
 						filterable.getDynamicDescendantFilter().allowIndex(selector.getIterationIndices());
 					}
 					return Match.partial(testDescriptor, childSelectorsSupplier);
@@ -157,8 +151,7 @@ class MethodSelectorResolver implements SelectorResolver {
 
 	private Supplier<Set<? extends DiscoverySelector>> expansionCallback(TestDescriptor testDescriptor) {
 		return () -> {
-			if (testDescriptor instanceof Filterable) {
-				Filterable filterable = (Filterable) testDescriptor;
+			if (testDescriptor instanceof Filterable filterable) {
 				filterable.getDynamicDescendantFilter().allowAll();
 			}
 			return emptySet();
@@ -236,7 +229,7 @@ class MethodSelectorResolver implements SelectorResolver {
 		}
 
 		private UniqueId createUniqueId(Method method, TestDescriptor parent) {
-			String methodId = String.format("%s(%s)", method.getName(),
+			String methodId = "%s(%s)".formatted(method.getName(),
 				ClassUtils.nullSafeToString(method.getParameterTypes()));
 			return parent.getUniqueId().append(segmentType, methodId);
 		}

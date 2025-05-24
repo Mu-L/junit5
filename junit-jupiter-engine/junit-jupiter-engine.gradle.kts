@@ -1,5 +1,6 @@
 plugins {
-	id("junitbuild.kotlin-library-conventions")
+	id("junitbuild.java-library-conventions")
+	id("junitbuild.java-nullability-conventions")
 	`java-test-fixtures`
 }
 
@@ -11,6 +12,7 @@ dependencies {
 	api(projects.junitJupiterApi)
 
 	compileOnlyApi(libs.apiguardian)
+	compileOnly(libs.jspecify)
 
 	osgiVerification(projects.junitPlatformLauncher)
 }
@@ -18,7 +20,6 @@ dependencies {
 tasks {
 	jar {
 		bundle {
-			val platformVersion: String by rootProject.extra
 			bnd("""
 				Provide-Capability:\
 					org.junit.platform.engine;\
@@ -26,7 +27,7 @@ tasks {
 						version:Version="${'$'}{version_cleanup;${project.version}}"
 				Require-Capability:\
 					org.junit.platform.launcher;\
-						filter:='(&(org.junit.platform.launcher=junit-platform-launcher)(version>=${'$'}{version_cleanup;${platformVersion}})(!(version>=${'$'}{versionmask;+;${'$'}{version_cleanup;${platformVersion}}})))';\
+						filter:='(&(org.junit.platform.launcher=junit-platform-launcher)(version>=${'$'}{version_cleanup;${project.version}})(!(version>=${'$'}{versionmask;+;${'$'}{version_cleanup;${project.version}}})))';\
 						effective:=active
 			""")
 		}

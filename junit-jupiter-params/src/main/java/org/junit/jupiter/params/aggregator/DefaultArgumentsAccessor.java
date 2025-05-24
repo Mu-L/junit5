@@ -10,7 +10,6 @@
 
 package org.junit.jupiter.params.aggregator;
 
-import static java.lang.String.format;
 import static org.apiguardian.api.API.Status.INTERNAL;
 
 import java.util.Arrays;
@@ -19,6 +18,7 @@ import java.util.List;
 import java.util.function.BiFunction;
 
 import org.apiguardian.api.API;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.converter.DefaultArgumentConverter;
 import org.junit.platform.commons.util.ClassUtils;
@@ -38,20 +38,21 @@ import org.junit.platform.commons.util.Preconditions;
 public class DefaultArgumentsAccessor implements ArgumentsAccessor {
 
 	private final int invocationIndex;
-	private final Object[] arguments;
-	private final BiFunction<Object, Class<?>, Object> converter;
+	private final @Nullable Object[] arguments;
+	private final BiFunction<@Nullable Object, Class<?>, @Nullable Object> converter;
 
 	public static DefaultArgumentsAccessor create(ExtensionContext context, int invocationIndex,
-			ClassLoader classLoader, Object[] arguments) {
+			ClassLoader classLoader, @Nullable Object[] arguments) {
 		Preconditions.notNull(classLoader, "ClassLoader must not be null");
 
-		BiFunction<Object, Class<?>, Object> converter = (source, targetType) -> new DefaultArgumentConverter(context) //
-				.convert(source, targetType, classLoader);
+		BiFunction<@Nullable Object, Class<?>, @Nullable Object> converter = (source,
+				targetType) -> new DefaultArgumentConverter(context) //
+						.convert(source, targetType, classLoader);
 		return new DefaultArgumentsAccessor(converter, invocationIndex, arguments);
 	}
 
-	private DefaultArgumentsAccessor(BiFunction<Object, Class<?>, Object> converter, int invocationIndex,
-			Object... arguments) {
+	private DefaultArgumentsAccessor(BiFunction<@Nullable Object, Class<?>, @Nullable Object> converter,
+			int invocationIndex, @Nullable Object... arguments) {
 		Preconditions.condition(invocationIndex >= 1, () -> "Invocation index must be >= 1");
 		this.converter = Preconditions.notNull(converter, "Converter must not be null");
 		this.invocationIndex = invocationIndex;
@@ -59,14 +60,15 @@ public class DefaultArgumentsAccessor implements ArgumentsAccessor {
 	}
 
 	@Override
+	@Nullable
 	public Object get(int index) {
 		Preconditions.condition(index >= 0 && index < this.arguments.length,
-			() -> format("index must be >= 0 and < %d", this.arguments.length));
+			() -> "index must be >= 0 and < %d".formatted(this.arguments.length));
 		return this.arguments[index];
 	}
 
 	@Override
-	public <T> T get(int index, Class<T> requiredType) {
+	public <T> @Nullable T get(int index, Class<T> requiredType) {
 		Preconditions.notNull(requiredType, "requiredType must not be null");
 		Object value = get(index);
 		try {
@@ -74,8 +76,7 @@ public class DefaultArgumentsAccessor implements ArgumentsAccessor {
 			return requiredType.cast(convertedValue);
 		}
 		catch (Exception ex) {
-			String message = format(
-				"Argument at index [%d] with value [%s] and type [%s] could not be converted or cast to type [%s].",
+			String message = "Argument at index [%d] with value [%s] and type [%s] could not be converted or cast to type [%s].".formatted(
 				index, value, ClassUtils.nullSafeToString(value == null ? null : value.getClass()),
 				requiredType.getName());
 			throw new ArgumentAccessException(message, ex);
@@ -83,47 +84,47 @@ public class DefaultArgumentsAccessor implements ArgumentsAccessor {
 	}
 
 	@Override
-	public Character getCharacter(int index) {
+	public @Nullable Character getCharacter(int index) {
 		return get(index, Character.class);
 	}
 
 	@Override
-	public Boolean getBoolean(int index) {
+	public @Nullable Boolean getBoolean(int index) {
 		return get(index, Boolean.class);
 	}
 
 	@Override
-	public Byte getByte(int index) {
+	public @Nullable Byte getByte(int index) {
 		return get(index, Byte.class);
 	}
 
 	@Override
-	public Short getShort(int index) {
+	public @Nullable Short getShort(int index) {
 		return get(index, Short.class);
 	}
 
 	@Override
-	public Integer getInteger(int index) {
+	public @Nullable Integer getInteger(int index) {
 		return get(index, Integer.class);
 	}
 
 	@Override
-	public Long getLong(int index) {
+	public @Nullable Long getLong(int index) {
 		return get(index, Long.class);
 	}
 
 	@Override
-	public Float getFloat(int index) {
+	public @Nullable Float getFloat(int index) {
 		return get(index, Float.class);
 	}
 
 	@Override
-	public Double getDouble(int index) {
+	public @Nullable Double getDouble(int index) {
 		return get(index, Double.class);
 	}
 
 	@Override
-	public String getString(int index) {
+	public @Nullable String getString(int index) {
 		return get(index, String.class);
 	}
 
@@ -133,12 +134,12 @@ public class DefaultArgumentsAccessor implements ArgumentsAccessor {
 	}
 
 	@Override
-	public Object[] toArray() {
+	public @Nullable Object[] toArray() {
 		return Arrays.copyOf(this.arguments, this.arguments.length);
 	}
 
 	@Override
-	public List<Object> toList() {
+	public List<@Nullable Object> toList() {
 		return Collections.unmodifiableList(Arrays.asList(this.arguments));
 	}
 

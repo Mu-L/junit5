@@ -12,11 +12,13 @@ package org.junit.platform.engine.discovery;
 
 import static org.apiguardian.api.API.Status.STABLE;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Objects;
 import java.util.Optional;
 
 import org.apiguardian.api.API;
+import org.jspecify.annotations.Nullable;
 import org.junit.platform.commons.logging.Logger;
 import org.junit.platform.commons.logging.LoggerFactory;
 import org.junit.platform.commons.util.Preconditions;
@@ -37,6 +39,7 @@ import org.junit.platform.commons.util.ToStringBuilder;
 @API(status = STABLE, since = "1.7")
 public class FilePosition implements Serializable {
 
+	@Serial
 	private static final long serialVersionUID = 1L;
 
 	private static final Logger logger = LoggerFactory.getLogger(FilePosition.class);
@@ -119,6 +122,8 @@ public class FilePosition implements Serializable {
 	}
 
 	private final int line;
+
+	@Nullable
 	private final Integer column;
 
 	private FilePosition(int line) {

@@ -13,6 +13,7 @@ package org.junit.jupiter.engine.extension;
 import static org.junit.jupiter.api.extension.ConditionEvaluationResult.disabled;
 import static org.junit.jupiter.api.extension.ConditionEvaluationResult.enabled;
 
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.RepetitionInfo;
 import org.junit.jupiter.api.extension.ConditionEvaluationResult;
@@ -61,14 +62,14 @@ class RepetitionExtension implements ParameterResolver, TestWatcher, ExecutionCo
 	}
 
 	@Override
-	public void testFailed(ExtensionContext context, Throwable cause) {
-		this.repetitionInfo.failureCount.incrementAndGet();
+	public void testFailed(ExtensionContext context, @Nullable Throwable cause) {
+		this.repetitionInfo.failureCount().incrementAndGet();
 	}
 
 	@Override
 	public ConditionEvaluationResult evaluateExecutionCondition(ExtensionContext context) {
-		int failureThreshold = this.repetitionInfo.failureThreshold;
-		if (this.repetitionInfo.failureCount.get() >= failureThreshold) {
+		int failureThreshold = this.repetitionInfo.getFailureThreshold();
+		if (this.repetitionInfo.getFailureCount() >= failureThreshold) {
 			return disabled("Failure threshold [" + failureThreshold + "] exceeded");
 		}
 		return enabled("Failure threshold not exceeded");

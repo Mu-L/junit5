@@ -10,7 +10,6 @@
 
 package org.junit.jupiter.api.condition;
 
-import static java.lang.String.format;
 import static org.junit.jupiter.api.extension.ConditionEvaluationResult.disabled;
 import static org.junit.jupiter.api.extension.ConditionEvaluationResult.enabled;
 import static org.junit.platform.commons.support.AnnotationSupport.findAnnotation;
@@ -21,6 +20,7 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.extension.ConditionEvaluationResult;
 import org.junit.jupiter.api.extension.ExecutionCondition;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -68,8 +68,8 @@ abstract class MethodBasedCondition<A extends Annotation> implements ExecutionCo
 		String className = methodParts[0];
 		String methodName = methodParts[1];
 		ClassLoader classLoader = ClassLoaderUtils.getClassLoader(testClass);
-		Class<?> clazz = ReflectionSupport.tryToLoadClass(className, classLoader).getOrThrow(
-			cause -> new JUnitException(format("Could not load class [%s]", className), cause));
+		Class<?> clazz = ReflectionSupport.tryToLoadClass(className, classLoader).getNonNullOrThrow(
+			cause -> new JUnitException("Could not load class [%s]".formatted(className), cause));
 		return findMethod(clazz, methodName);
 	}
 
@@ -80,11 +80,16 @@ abstract class MethodBasedCondition<A extends Annotation> implements ExecutionCo
 
 	private boolean invokeConditionMethod(Method method, ExtensionContext context) {
 		Preconditions.condition(method.getReturnType() == boolean.class,
-			() -> format("Method [%s] must return a boolean", method));
+			() -> "Method [%s] must return a boolean".formatted(method));
 		Preconditions.condition(acceptsExtensionContextOrNoArguments(method),
-			() -> format("Method [%s] must accept either an ExtensionContext or no arguments", method));
+			() -> "Method [%s] must accept either an ExtensionContext or no arguments".formatted(method));
 
 		Object testInstance = context.getTestInstance().orElse(null);
+		return invokeMethod(method, context, testInstance);
+	}
+
+	@SuppressWarnings({ "DataFlowIssue", "NullAway" })
+	private static boolean invokeMethod(Method method, ExtensionContext context, @Nullable Object testInstance) {
 		if (method.getParameterCount() == 0) {
 			return (boolean) ReflectionSupport.invokeMethod(method, testInstance);
 		}
@@ -97,7 +102,7 @@ abstract class MethodBasedCondition<A extends Annotation> implements ExecutionCo
 	}
 
 	private ConditionEvaluationResult buildConditionEvaluationResult(boolean methodResult, A annotation) {
-		Supplier<String> defaultReason = () -> format("@%s(\"%s\") evaluated to %s",
+		Supplier<String> defaultReason = () -> "@%s(\"%s\") evaluated to %s".formatted(
 			this.annotationType.getSimpleName(), this.methodName.apply(annotation), methodResult);
 		if (isEnabled(methodResult)) {
 			return enabled(defaultReason.get());
@@ -109,7 +114,7 @@ abstract class MethodBasedCondition<A extends Annotation> implements ExecutionCo
 	protected abstract boolean isEnabled(boolean methodResult);
 
 	private ConditionEvaluationResult enabledByDefault() {
-		return enabled(format("@%s is not present", this.annotationType.getSimpleName()));
+		return enabled("@%s is not present".formatted(this.annotationType.getSimpleName()));
 	}
 
 }

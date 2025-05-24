@@ -13,11 +13,11 @@ package org.junit.platform.launcher.core;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
+import org.jspecify.annotations.Nullable;
 import org.junit.platform.commons.util.Preconditions;
 import org.junit.platform.engine.TestDescriptor;
 import org.junit.platform.engine.UniqueId.Segment;
@@ -35,6 +35,8 @@ class HierarchicalOutputDirectoryProvider implements OutputDirectoryProvider {
 	private static final String REPLACEMENT = "_";
 
 	private final Supplier<Path> rootDirSupplier;
+
+	@Nullable
 	private volatile Path rootDir;
 
 	HierarchicalOutputDirectoryProvider(Supplier<Path> rootDirSupplier) {
@@ -55,14 +57,16 @@ class HierarchicalOutputDirectoryProvider implements OutputDirectoryProvider {
 
 	@Override
 	public synchronized Path getRootDirectory() {
-		if (rootDir == null) {
-			rootDir = rootDirSupplier.get();
+		var currentRootDir = rootDir;
+		if (currentRootDir == null) {
+			currentRootDir = rootDirSupplier.get();
+			rootDir = currentRootDir;
 		}
-		return rootDir;
+		return currentRootDir;
 	}
 
 	private static Path toSanitizedPath(Segment segment) {
-		return Paths.get(sanitizeName(segment.getValue()));
+		return Path.of(sanitizeName(segment.getValue()));
 	}
 
 	private static String sanitizeName(String value) {

@@ -47,8 +47,8 @@ public class DiscoverySelectorResolver {
 				new ClassOrderingVisitor(getConfiguration(ctx), ctx.getIssueReporter()), //
 				new MethodOrderingVisitor(getConfiguration(ctx), ctx.getIssueReporter()), //
 				descriptor -> {
-					if (descriptor instanceof Validatable) {
-						((Validatable) descriptor).validate(ctx.getIssueReporter());
+					if (descriptor instanceof Validatable validatable) {
+						validatable.validate(ctx.getIssueReporter());
 					}
 				})) //
 			.build();
@@ -57,9 +57,8 @@ public class DiscoverySelectorResolver {
 		return context.getEngineDescriptor().getConfiguration();
 	}
 
-	public void resolveSelectors(EngineDiscoveryRequest request, JupiterEngineDescriptor engineDescriptor) {
-		DiscoveryIssueReporter issueReporter = DiscoveryIssueReporter.deduplicating(
-			DiscoveryIssueReporter.forwarding(request.getDiscoveryListener(), engineDescriptor.getUniqueId()));
+	public static void resolveSelectors(EngineDiscoveryRequest request, JupiterEngineDescriptor engineDescriptor,
+			DiscoveryIssueReporter issueReporter) {
 		resolver.resolve(request, engineDescriptor, issueReporter);
 	}
 

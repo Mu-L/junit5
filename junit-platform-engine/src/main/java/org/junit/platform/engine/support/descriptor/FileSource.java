@@ -14,11 +14,13 @@ import static org.apiguardian.api.API.Status.STABLE;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Serial;
 import java.net.URI;
 import java.util.Objects;
 import java.util.Optional;
 
 import org.apiguardian.api.API;
+import org.jspecify.annotations.Nullable;
 import org.junit.platform.commons.JUnitException;
 import org.junit.platform.commons.util.Preconditions;
 import org.junit.platform.commons.util.ToStringBuilder;
@@ -33,6 +35,7 @@ import org.junit.platform.commons.util.ToStringBuilder;
 @API(status = STABLE, since = "1.0")
 public class FileSource implements FileSystemSource {
 
+	@Serial
 	private static final long serialVersionUID = 1L;
 
 	/**
@@ -51,18 +54,20 @@ public class FileSource implements FileSystemSource {
 	 * @param file the source file; must not be {@code null}
 	 * @param filePosition the position in the source file; may be {@code null}
 	 */
-	public static FileSource from(File file, FilePosition filePosition) {
+	public static FileSource from(File file, @Nullable FilePosition filePosition) {
 		return new FileSource(file, filePosition);
 	}
 
 	private final File file;
+
+	@Nullable
 	private final FilePosition filePosition;
 
 	private FileSource(File file) {
 		this(file, null);
 	}
 
-	private FileSource(File file, FilePosition filePosition) {
+	private FileSource(File file, @Nullable FilePosition filePosition) {
 		Preconditions.notNull(file, "file must not be null");
 		try {
 			this.file = file.getCanonicalFile();
@@ -109,7 +114,8 @@ public class FileSource implements FileSystemSource {
 			return false;
 		}
 		FileSource that = (FileSource) o;
-		return Objects.equals(this.file, that.file) && Objects.equals(this.filePosition, that.filePosition);
+		return Objects.equals(this.file, that.file) //
+				&& Objects.equals(this.filePosition, that.filePosition);
 	}
 
 	@Override

@@ -15,6 +15,12 @@ plugins {
 dependencyResolutionManagement {
 	repositories {
 		mavenCentral()
+		maven(url = "https://central.sonatype.com/repository/maven-snapshots") {
+			mavenContent {
+				snapshotsOnly()
+				includeGroup("org.opentest4j.reporting")
+			}
+		}
 	}
 }
 
@@ -84,7 +90,6 @@ include("junit-platform-engine")
 include("junit-platform-jfr")
 include("junit-platform-launcher")
 include("junit-platform-reporting")
-include("junit-platform-runner")
 include("junit-platform-suite")
 include("junit-platform-suite-api")
 include("junit-platform-suite-commons")

@@ -10,27 +10,26 @@
 
 package org.junit.platform.console.options;
 
-import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.Callable;
+import static java.util.Objects.requireNonNull;
 
+import java.util.Optional;
+
+import org.jspecify.annotations.Nullable;
 import org.junit.platform.console.tasks.ConsoleTestExecutor;
 
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
-import picocli.CommandLine.Help.ColorScheme;
 import picocli.CommandLine.IExitCodeGenerator;
 import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Option;
+import picocli.CommandLine.ParameterException;
 import picocli.CommandLine.Spec;
-import picocli.CommandLine.Unmatched;
 
 @Command(//
 		name = "junit", //
 		abbreviateSynopsis = true, //
+		synopsisSubcommandLabel = "COMMAND", //
 		sortOptions = false, //
 		usageHelpWidth = 95, //
 		showAtFileInUsageHelp = true, //
@@ -44,28 +43,23 @@ import picocli.CommandLine.Unmatched;
 		exitCodeOnExecutionException = CommandResult.FAILURE, //
 		versionProvider = ManifestVersionProvider.class //
 )
-class MainCommand implements Callable<Object>, IExitCodeGenerator {
+class MainCommand implements Runnable, IExitCodeGenerator {
 
 	private final ConsoleTestExecutor.Factory consoleTestExecutorFactory;
 
 	@Option(names = { "-h", "--help" }, help = true, description = "Display help information.")
 	private boolean helpRequested;
 
-	@Option(names = { "--h", "-help" }, help = true, hidden = true)
-	private boolean helpRequested2;
-
 	@Option(names = "--version", versionHelp = true, description = "Display version information.")
-	private boolean versionHelpRequested;
+	private boolean versionRequested;
 
 	@Mixin
 	AnsiColorOptionMixin ansiColorOption;
 
-	@Unmatched
-	private final List<String> allParameters = new ArrayList<>();
-
 	@Spec
 	CommandSpec commandSpec;
 
+	@Nullable
 	CommandResult<?> commandResult;
 
 	MainCommand(ConsoleTestExecutor.Factory consoleTestExecutorFactory) {
@@ -73,65 +67,27 @@ class MainCommand implements Callable<Object>, IExitCodeGenerator {
 	}
 
 	@Override
-	public Object call() {
-		if (helpRequested || helpRequested2) {
+	public void run() {
+		if (helpRequested) {
 			commandSpec.commandLine().usage(commandSpec.commandLine().getOut());
 			commandResult = CommandResult.success();
-			return null;
 		}
-		if (versionHelpRequested) {
+		else if (versionRequested) {
 			commandSpec.commandLine().printVersionHelp(commandSpec.commandLine().getOut());
 			commandResult = CommandResult.success();
-			return null;
 		}
-		if (allParameters.contains("--list-engines")) {
-			return runCommand("engines", Optional.of("--list-engines"));
+		else {
+			throw new ParameterException(commandSpec.commandLine(), "Missing required subcommand");
 		}
-		return runCommand("execute", Optional.empty());
 	}
 
 	@Override
 	public int getExitCode() {
-		return commandResult.getExitCode();
+		return requireNonNull(commandResult).getExitCode();
 	}
 
-	@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-	private Object runCommand(String subcommand, Optional<String> triggeringOption) {
-		CommandLine commandLine = commandSpec.commandLine();
-		commandLine.setUnmatchedArgumentsAllowed(false);
-		Object command = commandLine.getSubcommands().get(subcommand).getCommandSpec().userObject();
-
-		List<String> args = new ArrayList<>(commandLine.getParseResult().expandedArgs());
-		triggeringOption.ifPresent(args::remove);
-		CommandResult<?> result = runCommand( //
-			new CommandLine(command), //
-			args.toArray(new String[0]), //
-			Optional.of(new OutputStreamConfig(commandLine)) //
-		);
-		this.commandResult = result;
-
-		printDeprecationWarning(subcommand, triggeringOption, commandLine);
-
-		return result.getValue().orElse(null);
-	}
-
-	private static void printDeprecationWarning(String subcommand, Optional<String> triggeringOption,
-			CommandLine commandLine) {
-		PrintWriter err = commandLine.getErr();
-		String reason = triggeringOption.map(it -> " due to use of '" + it + "'").orElse("");
-
-		commandLine.getOut().flush();
-		err.println();
-		ColorScheme colorScheme = commandLine.getColorScheme();
-		err.println(colorScheme.string(
-			String.format("@|yellow,bold WARNING:|@ Delegated to the '%s' command%s.", subcommand, reason)));
-		err.println(
-			colorScheme.string("         This behaviour has been deprecated and will be removed in a future release."));
-		err.println(colorScheme.string("         Please use the '" + subcommand + "' command directly."));
-		err.flush();
-	}
-
-	CommandResult<?> run(String[] args, Optional<OutputStreamConfig> outputStreamConfig) {
+	CommandResult<?> run(String[] args,
+			@SuppressWarnings("OptionalUsedAsFieldOrParameterType") Optional<OutputStreamConfig> outputStreamConfig) {
 		CommandLine commandLine = new CommandLine(this) //
 				.addSubcommand(new DiscoverTestsCommand(consoleTestExecutorFactory)) //
 				.addSubcommand(new ExecuteTestsCommand(consoleTestExecutorFactory)) //
@@ -140,7 +96,7 @@ class MainCommand implements Callable<Object>, IExitCodeGenerator {
 	}
 
 	private static CommandResult<?> runCommand(CommandLine commandLine, String[] args,
-			Optional<OutputStreamConfig> outputStreamConfig) {
+			@SuppressWarnings("OptionalUsedAsFieldOrParameterType") Optional<OutputStreamConfig> outputStreamConfig) {
 		BaseCommand.initialize(commandLine);
 		outputStreamConfig.ifPresent(it -> it.applyTo(commandLine));
 		int exitCode = commandLine.execute(args);

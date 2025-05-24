@@ -10,6 +10,7 @@
 
 package org.junit.jupiter.params;
 
+import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.joining;
 import static org.junit.jupiter.params.ParameterizedInvocationConstants.ARGUMENTS_PLACEHOLDER;
 import static org.junit.jupiter.params.ParameterizedInvocationConstants.ARGUMENTS_WITH_NAMES_PLACEHOLDER;
@@ -34,6 +35,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.extension.ExtensionConfigurationException;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.platform.commons.JUnitException;
@@ -59,10 +61,10 @@ class ParameterizedInvocationNameFormatter {
 				? extensionContext.getConfigurationParameter(DISPLAY_NAME_PATTERN_KEY) //
 						.orElse(DEFAULT_DISPLAY_NAME_PATTERN)
 				: name;
-		pattern = Preconditions.notBlank(pattern.trim(), () -> String.format(
-			"Configuration error: @%s on %s must be declared with a non-empty name.",
-			declarationContext.getAnnotationName(),
-			declarationContext.getResolverFacade().getIndexedParameterDeclarations().getSourceElementDescription()));
+		pattern = Preconditions.notBlank(pattern.trim(),
+			() -> "Configuration error: @%s on %s must be declared with a non-empty name.".formatted(
+				declarationContext.getAnnotationName(),
+				declarationContext.getResolverFacade().getIndexedParameterDeclarations().getSourceElementDescription()));
 
 		int argumentMaxLength = extensionContext.getConfigurationParameter(ARGUMENT_MAX_LENGTH_KEY, Integer::parseInt) //
 				.orElse(512);
@@ -130,7 +132,7 @@ class ParameterizedInvocationNameFormatter {
 		return result.toArray(new PartialFormatter[0]);
 	}
 
-	private static PlaceholderPosition findFirstPlaceholder(PartialFormatters formatters, String segment) {
+	private static @Nullable PlaceholderPosition findFirstPlaceholder(PartialFormatters formatters, String segment) {
 		if (segment.length() < formatters.minimumPlaceholderLength) {
 			return null;
 		}
@@ -195,29 +197,11 @@ class ParameterizedInvocationNameFormatter {
 				.collect(joining(", "));
 	}
 
-	private static class PlaceholderPosition {
-
-		final int index;
-		final String placeholder;
-
-		PlaceholderPosition(int index, String placeholder) {
-			this.index = index;
-			this.placeholder = placeholder;
-		}
-
+	private record PlaceholderPosition(int index, String placeholder) {
 	}
 
-	private static class ArgumentsContext {
-
-		private final int invocationIndex;
-		private final Object[] consumedArguments;
-		private final Optional<String> argumentSetName;
-
-		ArgumentsContext(int invocationIndex, Object[] consumedArguments, Optional<String> argumentSetName) {
-			this.invocationIndex = invocationIndex;
-			this.consumedArguments = consumedArguments;
-			this.argumentSetName = argumentSetName;
-		}
+	private record ArgumentsContext(int invocationIndex, @Nullable Object[] consumedArguments,
+			Optional<String> argumentSetName) {
 	}
 
 	@FunctionalInterface
@@ -229,13 +213,7 @@ class ParameterizedInvocationNameFormatter {
 
 	}
 
-	private static class ArgumentSetNameFormatter implements PartialFormatter {
-
-		private final String annotationName;
-
-		ArgumentSetNameFormatter(String annotationName) {
-			this.annotationName = annotationName;
-		}
+	private record ArgumentSetNameFormatter(String annotationName) implements PartialFormatter {
 
 		@Override
 		public void append(ArgumentsContext context, StringBuffer result) {
@@ -243,9 +221,9 @@ class ParameterizedInvocationNameFormatter {
 				result.append(context.argumentSetName.get());
 				return;
 			}
-			throw new ExtensionConfigurationException(String.format(
-				"When the display name pattern for a @%s contains %s, the arguments must be supplied as an ArgumentSet.",
-				this.annotationName, ARGUMENT_SET_NAME_PLACEHOLDER));
+			throw new ExtensionConfigurationException(
+				"When the display name pattern for a @%s contains %s, the arguments must be supplied as an ArgumentSet.".formatted(
+					this.annotationName, ARGUMENT_SET_NAME_PLACEHOLDER));
 		}
 	}
 
@@ -268,8 +246,9 @@ class ParameterizedInvocationNameFormatter {
 			this.messageFormat.format(makeReadable(context.consumedArguments), result, new FieldPosition(0));
 		}
 
-		private Object[] makeReadable(Object[] arguments) {
+		private @Nullable Object[] makeReadable(@Nullable Object[] arguments) {
 			Format[] formats = messageFormat.getFormatsByArgumentIndex();
+			@Nullable
 			Object[] result = Arrays.copyOf(arguments, Math.min(arguments.length, formats.length), Object[].class);
 			for (int i = 0; i < result.length; i++) {
 				if (formats[i] == null) {
@@ -279,7 +258,7 @@ class ParameterizedInvocationNameFormatter {
 			return result;
 		}
 
-		private String truncateIfExceedsMaxLength(String argument) {
+		private @Nullable String truncateIfExceedsMaxLength(@Nullable String argument) {
 			if (argument != null && argument.length() > this.argumentMaxLength) {
 				return argument.substring(0, this.argumentMaxLength - 1) + ELLIPSIS;
 			}
@@ -316,7 +295,7 @@ class ParameterizedInvocationNameFormatter {
 		}
 
 		PartialFormatter get(String placeholder) {
-			return formattersByPlaceholder.get(placeholder);
+			return requireNonNull(formattersByPlaceholder.get(placeholder));
 		}
 
 		Set<String> placeholders() {

@@ -12,6 +12,8 @@ package org.junit.platform.launcher.tagexpression;
 
 import java.util.function.Supplier;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * @since 1.1
  */
@@ -43,8 +45,8 @@ class ParseStatus {
 	}
 
 	static ParseStatus missingOperatorBetween(TokenWith<TagExpression> lhs, TokenWith<TagExpression> rhs) {
-		String lhsString = "'" + lhs.element.toString() + "' at index " + format(lhs.token.lastCharacterIndex());
-		String rhsString = "'" + rhs.element.toString() + "' at index " + format(rhs.token.trimmedTokenStartIndex());
+		String lhsString = "'" + lhs.element() + "' at index " + format(lhs.token().lastCharacterIndex());
+		String rhsString = "'" + rhs.element() + "' at index " + format(rhs.token().trimmedTokenStartIndex());
 		return error("missing operator between " + lhsString + " and " + rhsString);
 	}
 
@@ -56,13 +58,14 @@ class ParseStatus {
 		return "<" + indexInTagExpression + ">";
 	}
 
-	private static ParseStatus error(String errorMessage) {
+	private static ParseStatus error(@Nullable String errorMessage) {
 		return new ParseStatus(errorMessage);
 	}
 
+	@Nullable
 	final String errorMessage;
 
-	private ParseStatus(String errorMessage) {
+	private ParseStatus(@Nullable String errorMessage) {
 		this.errorMessage = errorMessage;
 	}
 

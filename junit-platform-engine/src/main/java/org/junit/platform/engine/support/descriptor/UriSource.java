@@ -15,7 +15,6 @@ import static org.apiguardian.api.API.Status.STABLE;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 import org.apiguardian.api.API;
 import org.junit.platform.commons.logging.LoggerFactory;
@@ -59,7 +58,7 @@ public interface UriSource extends TestSource {
 
 		try {
 			URI uriWithoutQuery = ResourceUtils.stripQueryComponent(uri);
-			Path path = Paths.get(uriWithoutQuery);
+			Path path = Path.of(uriWithoutQuery);
 			if (Files.isRegularFile(path)) {
 				return FileSource.from(path.toFile(), FilePosition.fromQuery(uri.getQuery()).orElse(null));
 			}
@@ -68,8 +67,9 @@ public interface UriSource extends TestSource {
 			}
 		}
 		catch (RuntimeException ex) {
-			LoggerFactory.getLogger(UriSource.class).debug(ex, () -> String.format(
-				"The supplied URI [%s] is not path-based. Falling back to default UriSource implementation.", uri));
+			LoggerFactory.getLogger(UriSource.class).debug(ex,
+				() -> "The supplied URI [%s] is not path-based. Falling back to default UriSource implementation.".formatted(
+					uri));
 		}
 
 		// Store supplied URI as-is

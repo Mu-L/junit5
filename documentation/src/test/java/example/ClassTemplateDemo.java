@@ -11,14 +11,13 @@
 package example;
 
 import static java.util.Collections.singletonList;
-import static java.util.Collections.unmodifiableList;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.ClassTemplate;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ClassTemplateInvocationContext;
@@ -35,8 +34,11 @@ class ClassTemplateDemo {
 
 	static final List<String> WELL_KNOWN_FRUITS
 	// tag::custom_line_break[]
-		= unmodifiableList(Arrays.asList("apple", "banana", "lemon"));
+		= List.of("apple", "banana", "lemon");
 
+	//end::user_guide[]
+	@Nullable
+	//tag::user_guide[]
 	private String fruit;
 
 	@Test

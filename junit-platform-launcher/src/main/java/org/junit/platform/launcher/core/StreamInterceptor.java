@@ -18,6 +18,8 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.function.Consumer;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * @since 1.3
  */
@@ -112,7 +114,7 @@ class StreamInterceptor extends PrintStream {
 		}
 	}
 
-	private RewindableByteArrayOutputStream getOutput() {
+	private @Nullable RewindableByteArrayOutputStream getOutput() {
 		RewindableByteArrayOutputStream out = output.get();
 		return out.isMarked() ? out : mostRecentOutputs.peek();
 	}

@@ -11,11 +11,9 @@
 package org.junit.platform.engine.discovery;
 
 import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toList;
 import static org.apiguardian.api.API.Status.EXPERIMENTAL;
 import static org.apiguardian.api.API.Status.INTERNAL;
 import static org.apiguardian.api.API.Status.STABLE;
-import static org.junit.platform.commons.util.CollectionUtils.toUnmodifiableList;
 
 import java.util.Arrays;
 import java.util.List;
@@ -24,6 +22,7 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.apiguardian.api.API;
+import org.jspecify.annotations.Nullable;
 import org.junit.platform.commons.PreconditionViolationException;
 import org.junit.platform.commons.util.ToStringBuilder;
 import org.junit.platform.engine.DiscoverySelector;
@@ -54,21 +53,23 @@ import org.junit.platform.engine.DiscoverySelectorIdentifier;
 @API(status = STABLE, since = "1.6")
 public class NestedClassSelector implements DiscoverySelector {
 
+	@Nullable
 	private final ClassLoader classLoader;
+
 	private final List<ClassSelector> enclosingClassSelectors;
 	private final ClassSelector nestedClassSelector;
 
-	NestedClassSelector(ClassLoader classLoader, List<String> enclosingClassNames, String nestedClassName) {
+	NestedClassSelector(@Nullable ClassLoader classLoader, List<String> enclosingClassNames, String nestedClassName) {
 		this.classLoader = classLoader;
 		this.enclosingClassSelectors = enclosingClassNames.stream() //
 				.map(className -> new ClassSelector(classLoader, className)) //
-				.collect(toUnmodifiableList());
+				.toList();
 		this.nestedClassSelector = new ClassSelector(classLoader, nestedClassName);
 	}
 
 	NestedClassSelector(List<Class<?>> enclosingClasses, Class<?> nestedClass) {
 		this.classLoader = nestedClass.getClassLoader();
-		this.enclosingClassSelectors = enclosingClasses.stream().map(ClassSelector::new).collect(toList());
+		this.enclosingClassSelectors = enclosingClasses.stream().map(ClassSelector::new).toList();
 		this.nestedClassSelector = new ClassSelector(nestedClass);
 	}
 
@@ -79,7 +80,7 @@ public class NestedClassSelector implements DiscoverySelector {
 	 * @since 1.10
 	 */
 	@API(status = EXPERIMENTAL, since = "1.10")
-	public ClassLoader getClassLoader() {
+	public @Nullable ClassLoader getClassLoader() {
 		return this.classLoader;
 	}
 
@@ -87,7 +88,7 @@ public class NestedClassSelector implements DiscoverySelector {
 	 * Get the names of the classes enclosing the selected nested class.
 	 */
 	public List<String> getEnclosingClassNames() {
-		return this.enclosingClassSelectors.stream().map(ClassSelector::getClassName).collect(toList());
+		return this.enclosingClassSelectors.stream().map(ClassSelector::getClassName).toList();
 	}
 
 	/**
@@ -100,7 +101,7 @@ public class NestedClassSelector implements DiscoverySelector {
 	 * {@link PreconditionViolationException} if the classes cannot be loaded.
 	 */
 	public List<Class<?>> getEnclosingClasses() {
-		return this.enclosingClassSelectors.stream().map(ClassSelector::getJavaClass).collect(toList());
+		return this.enclosingClassSelectors.stream().map(ClassSelector::getJavaClass).toList();
 	}
 
 	/**

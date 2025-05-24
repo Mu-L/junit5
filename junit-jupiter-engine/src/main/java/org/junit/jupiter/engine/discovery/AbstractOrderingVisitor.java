@@ -11,8 +11,8 @@
 package org.junit.jupiter.engine.discovery;
 
 import static java.util.Comparator.comparing;
+import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toCollection;
-import static java.util.stream.Collectors.toList;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -23,6 +23,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.Nullable;
 import org.junit.platform.commons.util.UnrecoverableExceptions;
 import org.junit.platform.engine.DiscoveryIssue;
 import org.junit.platform.engine.DiscoveryIssue.Severity;
@@ -108,11 +109,11 @@ abstract class AbstractOrderingVisitor implements TestDescriptor.Visitor {
 
 			if (shouldNonMatchingDescriptorsComeBeforeOrderedOnes()) {
 				return Stream.concat(nonMatchingTestDescriptors, orderedTestDescriptors)//
-						.collect(toList());
+						.toList();
 			}
 			else {
 				return Stream.concat(orderedTestDescriptors, nonMatchingTestDescriptors)//
-						.collect(toList());
+						.toList();
 			}
 		});
 	}
@@ -137,12 +138,15 @@ abstract class AbstractOrderingVisitor implements TestDescriptor.Visitor {
 			return (DescriptorWrapperOrderer<ORDERER, WRAPPER>) NOOP;
 		}
 
+		@Nullable
 		private final ORDERER orderer;
+		@Nullable
 		private final Consumer<List<WRAPPER>> orderingAction;
+
 		private final MessageGenerator descriptorsAddedMessageGenerator;
 		private final MessageGenerator descriptorsRemovedMessageGenerator;
 
-		DescriptorWrapperOrderer(ORDERER orderer, Consumer<List<WRAPPER>> orderingAction,
+		DescriptorWrapperOrderer(@Nullable ORDERER orderer, @Nullable Consumer<List<WRAPPER>> orderingAction,
 				MessageGenerator descriptorsAddedMessageGenerator,
 				MessageGenerator descriptorsRemovedMessageGenerator) {
 
@@ -152,6 +156,7 @@ abstract class AbstractOrderingVisitor implements TestDescriptor.Visitor {
 			this.descriptorsRemovedMessageGenerator = descriptorsRemovedMessageGenerator;
 		}
 
+		@Nullable
 		ORDERER getOrderer() {
 			return orderer;
 		}
@@ -162,7 +167,7 @@ abstract class AbstractOrderingVisitor implements TestDescriptor.Visitor {
 
 		private void orderWrappers(List<WRAPPER> wrappers, Consumer<String> errorHandler) {
 			List<WRAPPER> orderedWrappers = new ArrayList<>(wrappers);
-			this.orderingAction.accept(orderedWrappers);
+			requireNonNull(this.orderingAction).accept(orderedWrappers);
 			Map<Object, Integer> distinctWrappersToIndex = distinctWrappersToIndex(orderedWrappers);
 
 			int difference = orderedWrappers.size() - wrappers.size();

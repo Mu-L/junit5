@@ -10,10 +10,8 @@
 
 package org.junit.platform.commons.support.scanning;
 
-import static java.lang.String.format;
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toList;
 import static org.apiguardian.api.API.Status.INTERNAL;
 import static org.junit.platform.commons.support.scanning.ClasspathFilters.CLASS_FILE_SUFFIX;
 import static org.junit.platform.commons.util.StringUtils.isNotBlank;
@@ -132,7 +130,7 @@ public class DefaultClasspathScanner implements ClasspathScanner {
 				.map(baseUri -> findClassesForUri(baseUri, basePackageName, classFilter))
 				.flatMap(Collection::stream)
 				.distinct()
-				.collect(toList());
+				.toList();
 		// @formatter:on
 	}
 
@@ -156,7 +154,7 @@ public class DefaultClasspathScanner implements ClasspathScanner {
 				.map(baseUri -> findResourcesForUri(baseUri, basePackageName, resourceFilter))
 				.flatMap(Collection::stream)
 				.distinct()
-				.collect(toList());
+				.toList();
 		// @formatter:on
 	}
 
@@ -297,8 +295,9 @@ public class DefaultClasspathScanner implements ClasspathScanner {
 
 	private void logMalformedClassName(Path classFile, String fullyQualifiedClassName, InternalError ex) {
 		try {
-			logger.debug(ex, () -> format("The java.lang.Class loaded from path [%s] has a malformed class name [%s].",
-				classFile.toAbsolutePath(), fullyQualifiedClassName));
+			logger.debug(ex,
+				() -> "The java.lang.Class loaded from path [%s] has a malformed class name [%s].".formatted(
+					classFile.toAbsolutePath(), fullyQualifiedClassName));
 		}
 		catch (Throwable t) {
 			UnrecoverableExceptions.rethrowIfUnrecoverable(t);
@@ -309,7 +308,7 @@ public class DefaultClasspathScanner implements ClasspathScanner {
 
 	private void logGenericFileProcessingException(Path classpathFile, Throwable throwable) {
 		logger.debug(throwable,
-			() -> format("Failed to load [%s] during classpath scanning.", classpathFile.toAbsolutePath()));
+			() -> "Failed to load [%s] during classpath scanning.".formatted(classpathFile.toAbsolutePath()));
 	}
 
 	private ClassLoader getClassLoader() {

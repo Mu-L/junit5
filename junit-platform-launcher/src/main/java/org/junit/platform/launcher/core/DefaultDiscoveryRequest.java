@@ -10,9 +10,6 @@
 
 package org.junit.platform.launcher.core;
 
-import static java.util.Collections.unmodifiableList;
-import static java.util.stream.Collectors.toList;
-
 import java.util.List;
 
 import org.junit.platform.commons.util.Preconditions;
@@ -58,10 +55,10 @@ final class DefaultDiscoveryRequest implements LauncherDiscoveryRequest {
 			List<DiscoveryFilter<?>> discoveryFilters, List<PostDiscoveryFilter> postDiscoveryFilters,
 			LauncherConfigurationParameters configurationParameters, LauncherDiscoveryListener discoveryListener,
 			OutputDirectoryProvider outputDirectoryProvider) {
-		this.selectors = selectors;
-		this.engineFilters = engineFilters;
-		this.discoveryFilters = discoveryFilters;
-		this.postDiscoveryFilters = postDiscoveryFilters;
+		this.selectors = List.copyOf(selectors);
+		this.engineFilters = List.copyOf(engineFilters);
+		this.discoveryFilters = List.copyOf(discoveryFilters);
+		this.postDiscoveryFilters = List.copyOf(postDiscoveryFilters);
 		this.configurationParameters = configurationParameters;
 		this.discoveryListener = discoveryListener;
 		this.outputDirectoryProvider = outputDirectoryProvider;
@@ -70,23 +67,23 @@ final class DefaultDiscoveryRequest implements LauncherDiscoveryRequest {
 	@Override
 	public <T extends DiscoverySelector> List<T> getSelectorsByType(Class<T> selectorType) {
 		Preconditions.notNull(selectorType, "selectorType must not be null");
-		return this.selectors.stream().filter(selectorType::isInstance).map(selectorType::cast).collect(toList());
+		return this.selectors.stream().filter(selectorType::isInstance).map(selectorType::cast).toList();
 	}
 
 	@Override
 	public List<EngineFilter> getEngineFilters() {
-		return unmodifiableList(this.engineFilters);
+		return this.engineFilters;
 	}
 
 	@Override
 	public <T extends DiscoveryFilter<?>> List<T> getFiltersByType(Class<T> filterType) {
 		Preconditions.notNull(filterType, "filterType must not be null");
-		return this.discoveryFilters.stream().filter(filterType::isInstance).map(filterType::cast).collect(toList());
+		return this.discoveryFilters.stream().filter(filterType::isInstance).map(filterType::cast).toList();
 	}
 
 	@Override
 	public List<PostDiscoveryFilter> getPostDiscoveryFilters() {
-		return unmodifiableList(this.postDiscoveryFilters);
+		return this.postDiscoveryFilters;
 	}
 
 	@Override

@@ -31,7 +31,6 @@ import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
@@ -41,7 +40,6 @@ import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.spi.ToolProvider;
-import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.fixtures.TrackLogRecords;
@@ -335,12 +333,12 @@ class DefaultClasspathScannerTests {
 			ReflectionUtils::tryToLoadClass);
 		{
 			var classes = classpathScanner.scanForClassesInPackage("foo", allClasses);
-			var classNames = classes.stream().map(Class::getName).collect(Collectors.toList());
+			var classNames = classes.stream().map(Class::getName).toList();
 			assertThat(classNames).hasSize(2).contains("foo.Foo", "foo.bar.FooBar");
 		}
 		{
 			var classes = classpathScanner.scanForClassesInPackage("foo.bar", allClasses);
-			var classNames = classes.stream().map(Class::getName).collect(Collectors.toList());
+			var classNames = classes.stream().map(Class::getName).toList();
 			assertThat(classNames).hasSize(1).contains("foo.bar.FooBar");
 		}
 	}
@@ -442,12 +440,14 @@ class DefaultClasspathScannerTests {
 		}
 	}
 
+	@SuppressWarnings({ "DataFlowIssue", "NullAway" })
 	@Test
 	void scanForClassesInPackageForNullBasePackage() {
 		assertThrows(PreconditionViolationException.class,
 			() -> classpathScanner.scanForClassesInPackage(null, allClasses));
 	}
 
+	@SuppressWarnings({ "DataFlowIssue", "NullAway" })
 	@Test
 	void scanForResourcesInPackageForNullBasePackage() {
 		assertThrows(PreconditionViolationException.class,
@@ -466,6 +466,7 @@ class DefaultClasspathScannerTests {
 			() -> classpathScanner.scanForResourcesInPackage("    ", allResources));
 	}
 
+	@SuppressWarnings({ "DataFlowIssue", "NullAway" })
 	@Test
 	void scanForClassesInPackageForNullClassFilter() {
 		assertThrows(PreconditionViolationException.class,
@@ -549,6 +550,7 @@ class DefaultClasspathScannerTests {
 		assertTrue(classes.contains(DefaultClasspathScannerTests.class));
 	}
 
+	@SuppressWarnings({ "DataFlowIssue", "NullAway" })
 	@Test
 	void findAllClassesInClasspathRootForNullRoot() {
 		assertThrows(PreconditionViolationException.class,
@@ -558,9 +560,10 @@ class DefaultClasspathScannerTests {
 	@Test
 	void findAllClassesInClasspathRootForNonExistingRoot() {
 		assertThrows(PreconditionViolationException.class,
-			() -> classpathScanner.scanForClassesInClasspathRoot(Paths.get("does_not_exist").toUri(), allClasses));
+			() -> classpathScanner.scanForClassesInClasspathRoot(Path.of("does_not_exist").toUri(), allClasses));
 	}
 
+	@SuppressWarnings({ "DataFlowIssue", "NullAway" })
 	@Test
 	void findAllClassesInClasspathRootForNullClassFilter() {
 		assertThrows(PreconditionViolationException.class,

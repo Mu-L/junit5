@@ -10,6 +10,7 @@
 
 package org.junit.jupiter.engine.extension;
 
+import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Timeout.TIMEOUT_MODE_PROPERTY_NAME;
 import static org.junit.jupiter.api.Timeout.ThreadMode.SAME_THREAD;
 
@@ -18,6 +19,7 @@ import java.lang.reflect.Method;
 import java.util.Optional;
 import java.util.function.Function;
 
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.Timeout.ThreadMode;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
@@ -153,15 +155,15 @@ class TimeoutExtension implements BeforeAllCallback, BeforeEachCallback, Invocat
 	}
 
 	private <T> T intercept(Invocation<T> invocation, ReflectiveInvocationContext<Method> invocationContext,
-			ExtensionContext extensionContext, TimeoutDuration explicitTimeout, TimeoutProvider defaultTimeoutProvider)
-			throws Throwable {
+			ExtensionContext extensionContext, @Nullable TimeoutDuration explicitTimeout,
+			TimeoutProvider defaultTimeoutProvider) throws Throwable {
 
 		TimeoutDuration timeout = explicitTimeout == null ? getDefaultTimeout(extensionContext, defaultTimeoutProvider)
 				: explicitTimeout;
 		return decorate(invocation, invocationContext, extensionContext, timeout).proceed();
 	}
 
-	private TimeoutDuration getDefaultTimeout(ExtensionContext extensionContext,
+	private @Nullable TimeoutDuration getDefaultTimeout(ExtensionContext extensionContext,
 			TimeoutProvider defaultTimeoutProvider) {
 
 		return defaultTimeoutProvider.apply(getGlobalTimeoutConfiguration(extensionContext)).orElse(null);
@@ -169,12 +171,12 @@ class TimeoutExtension implements BeforeAllCallback, BeforeEachCallback, Invocat
 
 	private TimeoutConfiguration getGlobalTimeoutConfiguration(ExtensionContext extensionContext) {
 		ExtensionContext root = extensionContext.getRoot();
-		return root.getStore(NAMESPACE).getOrComputeIfAbsent(GLOBAL_TIMEOUT_CONFIG_KEY,
-			key -> new TimeoutConfiguration(root), TimeoutConfiguration.class);
+		return requireNonNull(root.getStore(NAMESPACE).getOrComputeIfAbsent(GLOBAL_TIMEOUT_CONFIG_KEY,
+			key -> new TimeoutConfiguration(root), TimeoutConfiguration.class));
 	}
 
 	private <T> Invocation<T> decorate(Invocation<T> invocation, ReflectiveInvocationContext<Method> invocationContext,
-			ExtensionContext extensionContext, TimeoutDuration timeout) {
+			ExtensionContext extensionContext, @Nullable TimeoutDuration timeout) {
 
 		if (timeout == null || isTimeoutDisabled(extensionContext)) {
 			return invocation;
@@ -194,7 +196,7 @@ class TimeoutExtension implements BeforeAllCallback, BeforeEachCallback, Invocat
 		return annotationThreadMode;
 	}
 
-	private ThreadMode getAnnotationThreadMode(ExtensionContext extensionContext) {
+	private @Nullable ThreadMode getAnnotationThreadMode(ExtensionContext extensionContext) {
 		return extensionContext.getStore(NAMESPACE).get(TESTABLE_METHOD_TIMEOUT_THREAD_MODE_KEY, ThreadMode.class);
 	}
 
@@ -202,7 +204,7 @@ class TimeoutExtension implements BeforeAllCallback, BeforeEachCallback, Invocat
 		Method method = invocationContext.getExecutable();
 		Optional<Class<?>> testClass = extensionContext.getTestClass();
 		if (testClass.isPresent() && invocationContext.getTargetClass().equals(testClass.get())) {
-			return String.format("%s(%s)", method.getName(), ClassUtils.nullSafeToString(method.getParameterTypes()));
+			return "%s(%s)".formatted(method.getName(), ClassUtils.nullSafeToString(method.getParameterTypes()));
 		}
 		return ReflectionUtils.getFullyQualifiedMethodName(invocationContext.getTargetClass(), method);
 	}
@@ -219,16 +221,12 @@ class TimeoutExtension implements BeforeAllCallback, BeforeEachCallback, Invocat
 	 * Determine if timeouts are disabled for the supplied mode.
 	 */
 	private boolean isTimeoutDisabled(String mode) {
-		switch (mode) {
-			case ENABLED_MODE_VALUE:
-				return false;
-			case DISABLED_MODE_VALUE:
-				return true;
-			case DISABLED_ON_DEBUG_MODE_VALUE:
-				return RuntimeUtils.isDebugMode();
-			default:
-				throw new ExtensionConfigurationException("Unsupported timeout mode: " + mode);
-		}
+		return switch (mode) {
+			case ENABLED_MODE_VALUE -> false;
+			case DISABLED_MODE_VALUE -> true;
+			case DISABLED_ON_DEBUG_MODE_VALUE -> RuntimeUtils.isDebugMode();
+			default -> throw new ExtensionConfigurationException("Unsupported timeout mode: " + mode);
+		};
 	}
 
 	@FunctionalInterface

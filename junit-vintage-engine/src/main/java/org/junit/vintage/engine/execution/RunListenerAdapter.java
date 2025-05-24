@@ -15,6 +15,7 @@ import static org.junit.vintage.engine.descriptor.VintageTestDescriptor.SEGMENT_
 import java.util.Optional;
 import java.util.function.Function;
 
+import org.jspecify.annotations.Nullable;
 import org.junit.Ignore;
 import org.junit.platform.engine.EngineExecutionListener;
 import org.junit.platform.engine.TestDescriptor;
@@ -192,7 +193,7 @@ class RunListenerAdapter extends RunListener {
 				.flatMap(testClass -> getReason(testClass.getAnnotation(Ignore.class)));
 	}
 
-	private static Optional<String> getReason(Ignore annotation) {
+	private static Optional<String> getReason(@Nullable Ignore annotation) {
 		return Optional.ofNullable(annotation).map(Ignore::value);
 	}
 
@@ -216,7 +217,7 @@ class RunListenerAdapter extends RunListener {
 
 	private boolean isAncestor(TestDescriptor candidate, TestDescriptor testDescriptor) {
 		Optional<TestDescriptor> parent = testDescriptor.getParent();
-		if (!parent.isPresent()) {
+		if (parent.isEmpty()) {
 			return false;
 		}
 		if (parent.get().equals(candidate)) {

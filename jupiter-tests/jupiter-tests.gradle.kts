@@ -2,6 +2,7 @@ import org.gradle.api.tasks.PathSensitivity.RELATIVE
 
 plugins {
 	id("junitbuild.code-generator")
+	id("junitbuild.java-nullability-conventions")
 	id("junitbuild.kotlin-library-conventions")
 	id("junitbuild.junit4-compatibility")
 	id("junitbuild.testing-conventions")
@@ -25,6 +26,8 @@ dependencies {
 	testImplementation(testFixtures(projects.junitJupiterEngine))
 	testImplementation(testFixtures(projects.junitPlatformLauncher))
 	testImplementation(testFixtures(projects.junitPlatformReporting))
+
+	testRuntimeOnly(kotlin("reflect"))
 }
 
 tasks {

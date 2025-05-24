@@ -10,7 +10,6 @@
 
 package org.junit.platform.launcher.core;
 
-import static org.apiguardian.api.API.Status.DEPRECATED;
 import static org.apiguardian.api.API.Status.EXPERIMENTAL;
 import static org.apiguardian.api.API.Status.STABLE;
 import static org.junit.platform.launcher.LauncherConstants.OUTPUT_DIR_PROPERTY_NAME;
@@ -23,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apiguardian.api.API;
+import org.jspecify.annotations.Nullable;
 import org.junit.platform.commons.PreconditionViolationException;
 import org.junit.platform.commons.util.Preconditions;
 import org.junit.platform.engine.ConfigurationParameters;
@@ -110,7 +110,11 @@ public final class LauncherDiscoveryRequestBuilder {
 	private final List<String> configurationParametersResources = new ArrayList<>();
 	private final List<LauncherDiscoveryListener> discoveryListeners = new ArrayList<>();
 	private boolean implicitConfigurationParametersEnabled = true;
+
+	@Nullable
 	private ConfigurationParameters parentConfigurationParameters;
+
+	@Nullable
 	private OutputDirectoryProvider outputDirectoryProvider;
 
 	/**
@@ -122,12 +126,7 @@ public final class LauncherDiscoveryRequestBuilder {
 		return new LauncherDiscoveryRequestBuilder();
 	}
 
-	/**
-	 * @deprecated Use {@link #request()}
-	 */
-	@API(status = DEPRECATED, since = "1.8")
-	@Deprecated
-	public LauncherDiscoveryRequestBuilder() {
+	private LauncherDiscoveryRequestBuilder() {
 	}
 
 	/**
@@ -310,18 +309,18 @@ public final class LauncherDiscoveryRequestBuilder {
 	}
 
 	private void storeFilter(Filter<?> filter) {
-		if (filter instanceof EngineFilter) {
-			this.engineFilters.add((EngineFilter) filter);
+		if (filter instanceof EngineFilter engineFilter) {
+			this.engineFilters.add(engineFilter);
 		}
-		else if (filter instanceof PostDiscoveryFilter) {
-			this.postDiscoveryFilters.add((PostDiscoveryFilter) filter);
+		else if (filter instanceof PostDiscoveryFilter postDiscoveryFilter) {
+			this.postDiscoveryFilters.add(postDiscoveryFilter);
 		}
-		else if (filter instanceof DiscoveryFilter<?>) {
-			this.discoveryFilters.add((DiscoveryFilter<?>) filter);
+		else if (filter instanceof DiscoveryFilter<?> discoveryFilter) {
+			this.discoveryFilters.add(discoveryFilter);
 		}
 		else {
 			throw new PreconditionViolationException(
-				String.format("Filter [%s] must implement %s, %s, or %s.", filter, EngineFilter.class.getSimpleName(),
+				"Filter [%s] must implement %s, %s, or %s.".formatted(filter, EngineFilter.class.getSimpleName(),
 					PostDiscoveryFilter.class.getSimpleName(), DiscoveryFilter.class.getSimpleName()));
 		}
 	}

@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import org.jspecify.annotations.Nullable;
 import org.junit.platform.commons.util.Preconditions;
 
 /**
@@ -66,7 +67,7 @@ class FallbackStringToObjectConverter implements StringToObjectConverter {
 	 * This prevents the framework from repeatedly searching for things which
 	 * are already known not to exist.
 	 */
-	private static final ConcurrentHashMap<Class<?>, Function<String, Object>> factoryExecutableCache //
+	private static final ConcurrentHashMap<Class<?>, Function<String, @Nullable Object>> factoryExecutableCache //
 		= new ConcurrentHashMap<>(64);
 
 	@Override
@@ -75,15 +76,16 @@ class FallbackStringToObjectConverter implements StringToObjectConverter {
 	}
 
 	@Override
+	@Nullable
 	public Object convert(String source, Class<?> targetType) throws Exception {
-		Function<String, Object> executable = findFactoryExecutable(targetType);
+		Function<String, @Nullable Object> executable = findFactoryExecutable(targetType);
 		Preconditions.condition(executable != NULL_EXECUTABLE,
 			"Illegal state: convert() must not be called if canConvert() returned false");
 
 		return executable.apply(source);
 	}
 
-	private static Function<String, Object> findFactoryExecutable(Class<?> targetType) {
+	private static Function<String, @Nullable Object> findFactoryExecutable(Class<?> targetType) {
 		return factoryExecutableCache.computeIfAbsent(targetType, type -> {
 			Method factoryMethod = findFactoryMethod(type);
 			if (factoryMethod != null) {
@@ -97,7 +99,7 @@ class FallbackStringToObjectConverter implements StringToObjectConverter {
 		});
 	}
 
-	private static Method findFactoryMethod(Class<?> targetType) {
+	private static @Nullable Method findFactoryMethod(Class<?> targetType) {
 		List<Method> factoryMethods = findMethods(targetType, new IsFactoryMethod(targetType), BOTTOM_UP);
 		if (factoryMethods.size() == 1) {
 			return factoryMethods.get(0);
@@ -105,7 +107,7 @@ class FallbackStringToObjectConverter implements StringToObjectConverter {
 		return null;
 	}
 
-	private static Constructor<?> findFactoryConstructor(Class<?> targetType) {
+	private static @Nullable Constructor<?> findFactoryConstructor(Class<?> targetType) {
 		List<Constructor<?>> constructors = findConstructors(targetType, new IsFactoryConstructor(targetType));
 		if (constructors.size() == 1) {
 			return constructors.get(0);

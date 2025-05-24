@@ -37,16 +37,14 @@ class DiscoverySelectorIdentifierParsers {
 		Preconditions.notNull(identifiers, "identifiers must not be null");
 		return Stream.of(identifiers) //
 				.map(DiscoverySelectorIdentifierParsers::parse) //
-				.filter(Optional::isPresent) //
-				.map(Optional::get);
+				.flatMap(Optional::stream);
 	}
 
 	static Stream<? extends DiscoverySelector> parseAll(Collection<DiscoverySelectorIdentifier> identifiers) {
 		Preconditions.notNull(identifiers, "identifiers must not be null");
 		return identifiers.stream() //
 				.map(DiscoverySelectorIdentifierParsers::parse) //
-				.filter(Optional::isPresent) //
-				.map(Optional::get);
+				.flatMap(Optional::stream);
 	}
 
 	static Optional<? extends DiscoverySelector> parse(String identifier) {
@@ -56,8 +54,9 @@ class DiscoverySelectorIdentifierParsers {
 
 	static Optional<? extends DiscoverySelector> parse(DiscoverySelectorIdentifier identifier) {
 		Preconditions.notNull(identifier, "identifier must not be null");
-		DiscoverySelectorIdentifierParser parser = Singleton.INSTANCE.parsersByPrefix.get(identifier.getPrefix());
-		Preconditions.notNull(parser, "No parser for prefix: " + identifier.getPrefix());
+		DiscoverySelectorIdentifierParser parser = Preconditions.notNull(
+			Singleton.INSTANCE.parsersByPrefix.get(identifier.getPrefix()),
+			"No parser for prefix: " + identifier.getPrefix());
 
 		return parser.parse(identifier, DiscoverySelectorIdentifierParsers::parse);
 	}
@@ -75,7 +74,7 @@ class DiscoverySelectorIdentifierParsers {
 			for (DiscoverySelectorIdentifierParser parser : loadedParsers) {
 				DiscoverySelectorIdentifierParser previous = parsersByPrefix.put(parser.getPrefix(), parser);
 				Preconditions.condition(previous == null,
-					() -> String.format("Duplicate parser for prefix: [%s]; candidate a: [%s]; candidate b: [%s]",
+					() -> "Duplicate parser for prefix: [%s]; candidate a: [%s]; candidate b: [%s]".formatted(
 						parser.getPrefix(), requireNonNull(previous).getClass().getName(),
 						parser.getClass().getName()));
 			}

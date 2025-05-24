@@ -18,8 +18,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -29,10 +27,10 @@ import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apiguardian.api.API;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.extension.Extension;
 import org.junit.jupiter.engine.config.JupiterConfiguration;
 import org.junit.platform.commons.logging.Logger;
@@ -52,13 +50,14 @@ public class MutableExtensionRegistry implements ExtensionRegistry, ExtensionReg
 
 	private static final Logger logger = LoggerFactory.getLogger(MutableExtensionRegistry.class);
 
-	private static final List<Extension> DEFAULT_STATELESS_EXTENSIONS = Collections.unmodifiableList(Arrays.asList(//
+	private static final List<Extension> DEFAULT_STATELESS_EXTENSIONS = List.of( //
 		new DisabledCondition(), //
 		new AutoCloseExtension(), //
 		new TimeoutExtension(), //
 		new RepeatedTestExtension(), //
 		new TestInfoParameterResolver(), //
-		new TestReporterParameterResolver()));
+		new TestReporterParameterResolver() //
+	);
 
 	/**
 	 * Factory for creating and populating a new root registry with the default
@@ -122,10 +121,10 @@ public class MutableExtensionRegistry implements ExtensionRegistry, ExtensionReg
 			List<String> excludeExtensionNames = excludedExtensions
 					.stream()
 					.map(Class::getName)
-					.collect(Collectors.toList());
+					.toList();
 			// @formatter:on
-			logger.config(() -> String.format(
-				"Excluded auto-detected extensions due to configured includes/excludes: %s", excludeExtensionNames));
+			logger.config(() -> "Excluded auto-detected extensions due to configured includes/excludes: %s".formatted(
+				excludeExtensionNames));
 		}
 	}
 
@@ -167,8 +166,7 @@ public class MutableExtensionRegistry implements ExtensionRegistry, ExtensionReg
 		this.lateInitExtensions = new LinkedHashMap<>();
 		registeredExtensions.forEach(entry -> {
 			Entry newEntry = entry;
-			if (entry instanceof LateInitEntry) {
-				LateInitEntry lateInitEntry = (LateInitEntry) entry;
+			if (entry instanceof LateInitEntry lateInitEntry) {
 				newEntry = lateInitEntry.getExtension() //
 						.map(Entry::of) //
 						.orElseGet(() -> getLateInitExtensions(lateInitEntry.getTestClass()).add(lateInitEntry.copy()));
@@ -218,8 +216,8 @@ public class MutableExtensionRegistry implements ExtensionRegistry, ExtensionReg
 		Preconditions.notNull(source, "source must not be null");
 		Preconditions.notNull(initializer, "initializer must not be null");
 
-		logger.trace(() -> String.format("Registering local extension (late-init) for [%s]%s",
-			source.getType().getName(), buildSourceInfo(source)));
+		logger.trace(() -> "Registering local extension (late-init) for [%s]%s".formatted(source.getType().getName(),
+			buildSourceInfo(source)));
 
 		LateInitEntry entry = getLateInitExtensions(testClass) //
 				.add(new LateInitEntry(testClass, initializer));
@@ -257,25 +255,23 @@ public class MutableExtensionRegistry implements ExtensionRegistry, ExtensionReg
 		registerExtension(category, extension, null);
 	}
 
-	private void registerExtension(String category, Extension extension, Object source) {
+	private void registerExtension(String category, Extension extension, @Nullable Object source) {
 		Preconditions.notBlank(category, "category must not be null or blank");
 		Preconditions.notNull(extension, "extension must not be null");
 
-		logger.trace(
-			() -> String.format("Registering %s extension [%s]%s", category, extension, buildSourceInfo(source)));
+		logger.trace(() -> "Registering %s extension [%s]%s".formatted(category, extension, buildSourceInfo(source)));
 
 		this.registeredExtensions.add(Entry.of(extension));
 		this.registeredExtensionTypes.add(extension.getClass());
 	}
 
-	private String buildSourceInfo(Object source) {
+	private String buildSourceInfo(@Nullable Object source) {
 		if (source == null) {
 			return "";
 		}
-		if (source instanceof Member) {
-			Member member = (Member) source;
+		if (source instanceof Member member) {
 			Object type = (member instanceof Method ? "method" : "field");
-			source = String.format("%s %s.%s", type, member.getDeclaringClass().getName(), member.getName());
+			source = "%s %s.%s".formatted(type, member.getDeclaringClass().getName(), member.getName());
 		}
 		return " from source [" + source + "]";
 	}
@@ -313,12 +309,12 @@ public class MutableExtensionRegistry implements ExtensionRegistry, ExtensionReg
 		}
 
 		void initialize(Object testInstance) {
-			Preconditions.condition(!extension.isPresent(), "Extension already initialized");
+			Preconditions.condition(extension.isEmpty(), "Extension already initialized");
 			extension = Optional.of(initializer.apply(testInstance));
 		}
 
 		LateInitEntry copy() {
-			Preconditions.condition(!extension.isPresent(), "Extension already initialized");
+			Preconditions.condition(extension.isEmpty(), "Extension already initialized");
 			return new LateInitEntry(testClass, initializer);
 		}
 	}

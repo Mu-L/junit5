@@ -39,6 +39,7 @@ class MethodFilterTests {
 	private static final TestDescriptor CLASS2_TEST1 = methodTestDescriptor("class2", Class2.class, "test1");
 	private static final TestDescriptor CLASS2_TEST2 = methodTestDescriptor("class2", Class2.class, "test2");
 
+	@SuppressWarnings({ "DataFlowIssue", "NullAway" })
 	@Test
 	void includeMethodNamePatternsChecksPreconditions() {
 		assertThatThrownBy(() -> includeMethodNamePatterns((String[]) null)) //
@@ -58,14 +59,14 @@ class MethodFilterTests {
 		var filter = includeMethodNamePatterns(regex);
 
 		assertIncluded(filter.apply(CLASS1_TEST1),
-			String.format("Method name [%s] matches included pattern: '%s'", CLASS1_TEST1_NAME, regex));
+			"Method name [%s] matches included pattern: '%s'".formatted(CLASS1_TEST1_NAME, regex));
 		assertIncluded(filter.apply(CLASS1_TEST2),
-			String.format("Method name [%s] matches included pattern: '%s'", CLASS1_TEST2_NAME, regex));
+			"Method name [%s] matches included pattern: '%s'".formatted(CLASS1_TEST2_NAME, regex));
 
 		assertExcluded(filter.apply(CLASS2_TEST1),
-			String.format("Method name [%s] does not match any included pattern: '%s'", CLASS2_TEST1_NAME, regex));
+			"Method name [%s] does not match any included pattern: '%s'".formatted(CLASS2_TEST1_NAME, regex));
 		assertExcluded(filter.apply(CLASS2_TEST2),
-			String.format("Method name [%s] does not match any included pattern: '%s'", CLASS2_TEST2_NAME, regex));
+			"Method name [%s] does not match any included pattern: '%s'".formatted(CLASS2_TEST2_NAME, regex));
 	}
 
 	@Test
@@ -75,17 +76,18 @@ class MethodFilterTests {
 		var filter = includeMethodNamePatterns(firstRegex, secondRegex);
 
 		assertIncluded(filter.apply(CLASS1_TEST1),
-			String.format("Method name [%s] matches included pattern: '%s'", CLASS1_TEST1_NAME, firstRegex));
+			"Method name [%s] matches included pattern: '%s'".formatted(CLASS1_TEST1_NAME, firstRegex));
 		assertIncluded(filter.apply(CLASS1_TEST2),
-			String.format("Method name [%s] matches included pattern: '%s'", CLASS1_TEST2_NAME, firstRegex));
+			"Method name [%s] matches included pattern: '%s'".formatted(CLASS1_TEST2_NAME, firstRegex));
 		assertIncluded(filter.apply(CLASS2_TEST1),
-			String.format("Method name [%s] matches included pattern: '%s'", CLASS2_TEST1_NAME, secondRegex));
+			"Method name [%s] matches included pattern: '%s'".formatted(CLASS2_TEST1_NAME, secondRegex));
 
 		assertExcluded(filter.apply(CLASS2_TEST2),
-			String.format("Method name [%s] does not match any included pattern: '%s' OR '%s'", CLASS2_TEST2_NAME,
+			"Method name [%s] does not match any included pattern: '%s' OR '%s'".formatted(CLASS2_TEST2_NAME,
 				firstRegex, secondRegex));
 	}
 
+	@SuppressWarnings({ "DataFlowIssue", "NullAway" })
 	@Test
 	void excludeMethodNamePatternsChecksPreconditions() {
 		assertThatThrownBy(() -> excludeMethodNamePatterns((String[]) null)) //
@@ -105,14 +107,14 @@ class MethodFilterTests {
 		var filter = excludeMethodNamePatterns(regex);
 
 		assertExcluded(filter.apply(CLASS1_TEST1),
-			String.format("Method name [%s] matches excluded pattern: '%s'", CLASS1_TEST1_NAME, regex));
+			"Method name [%s] matches excluded pattern: '%s'".formatted(CLASS1_TEST1_NAME, regex));
 		assertExcluded(filter.apply(CLASS1_TEST2),
-			String.format("Method name [%s] matches excluded pattern: '%s'", CLASS1_TEST2_NAME, regex));
+			"Method name [%s] matches excluded pattern: '%s'".formatted(CLASS1_TEST2_NAME, regex));
 
 		assertIncluded(filter.apply(CLASS2_TEST1),
-			String.format("Method name [%s] does not match any excluded pattern: '%s'", CLASS2_TEST1_NAME, regex));
+			"Method name [%s] does not match any excluded pattern: '%s'".formatted(CLASS2_TEST1_NAME, regex));
 		assertIncluded(filter.apply(CLASS2_TEST2),
-			String.format("Method name [%s] does not match any excluded pattern: '%s'", CLASS2_TEST2_NAME, regex));
+			"Method name [%s] does not match any excluded pattern: '%s'".formatted(CLASS2_TEST2_NAME, regex));
 	}
 
 	@Test
@@ -122,14 +124,14 @@ class MethodFilterTests {
 		var filter = excludeMethodNamePatterns(firstRegex, secondRegex);
 
 		assertExcluded(filter.apply(CLASS1_TEST1),
-			String.format("Method name [%s] matches excluded pattern: '%s'", CLASS1_TEST1_NAME, firstRegex));
+			"Method name [%s] matches excluded pattern: '%s'".formatted(CLASS1_TEST1_NAME, firstRegex));
 		assertExcluded(filter.apply(CLASS1_TEST2),
-			String.format("Method name [%s] matches excluded pattern: '%s'", CLASS1_TEST2_NAME, firstRegex));
+			"Method name [%s] matches excluded pattern: '%s'".formatted(CLASS1_TEST2_NAME, firstRegex));
 		assertExcluded(filter.apply(CLASS2_TEST1),
-			String.format("Method name [%s] matches excluded pattern: '%s'", CLASS2_TEST1_NAME, secondRegex));
+			"Method name [%s] matches excluded pattern: '%s'".formatted(CLASS2_TEST1_NAME, secondRegex));
 
 		assertIncluded(filter.apply(CLASS2_TEST2),
-			String.format("Method name [%s] does not match any excluded pattern: '%s' OR '%s'", CLASS2_TEST2_NAME,
+			"Method name [%s] does not match any excluded pattern: '%s' OR '%s'".formatted(CLASS2_TEST2_NAME,
 				firstRegex, secondRegex));
 	}
 

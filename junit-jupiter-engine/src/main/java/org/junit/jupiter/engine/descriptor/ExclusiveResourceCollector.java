@@ -12,7 +12,6 @@ package org.junit.jupiter.engine.descriptor;
 
 import static org.junit.jupiter.api.parallel.ResourceLockTarget.SELF;
 import static org.junit.platform.commons.support.AnnotationSupport.findRepeatableAnnotations;
-import static org.junit.platform.commons.util.CollectionUtils.toUnmodifiableList;
 
 import java.lang.reflect.AnnotatedElement;
 import java.util.Collection;
@@ -21,11 +20,11 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.parallel.ResourceAccessMode;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.ResourceLockTarget;
 import org.junit.jupiter.api.parallel.ResourceLocksProvider;
-import org.junit.platform.commons.JUnitException;
 import org.junit.platform.commons.util.ReflectionUtils;
 import org.junit.platform.commons.util.StringUtils;
 import org.junit.platform.engine.support.hierarchical.ExclusiveResource;
@@ -73,6 +72,8 @@ abstract class ExclusiveResourceCollector {
 	private static class DefaultExclusiveResourceCollector extends ExclusiveResourceCollector {
 
 		private final List<ResourceLock> annotations;
+
+		@Nullable
 		private List<ResourceLocksProvider> providers;
 
 		DefaultExclusiveResourceCollector(List<ResourceLock> annotations) {
@@ -103,20 +104,21 @@ abstract class ExclusiveResourceCollector {
 		private List<ResourceLocksProvider> getProviders() {
 			if (this.providers == null) {
 				this.providers = annotations.stream() //
-						.flatMap(annotation -> Stream.of(annotation.providers()).map(ReflectionUtils::newInstance)) //
-						.collect(toUnmodifiableList());
+						.flatMap(annotation -> instantiate(annotation.providers())) //
+						.toList();
 			}
 			return providers;
 		}
 
+		private static Stream<ResourceLocksProvider> instantiate(Class<? extends ResourceLocksProvider>[] providers) {
+			return Stream.of(providers).map(ReflectionUtils::newInstance);
+		}
+
 		private static ExclusiveResource.LockMode toLockMode(ResourceAccessMode mode) {
-			switch (mode) {
-				case READ:
-					return ExclusiveResource.LockMode.READ;
-				case READ_WRITE:
-					return ExclusiveResource.LockMode.READ_WRITE;
-			}
-			throw new JUnitException("Unknown ResourceAccessMode: " + mode);
+			return switch (mode) {
+				case READ -> ExclusiveResource.LockMode.READ;
+				case READ_WRITE -> ExclusiveResource.LockMode.READ_WRITE;
+			};
 		}
 	}
 }

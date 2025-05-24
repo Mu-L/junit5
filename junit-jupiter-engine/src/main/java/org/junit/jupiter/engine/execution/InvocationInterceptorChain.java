@@ -18,6 +18,7 @@ import java.util.ListIterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apiguardian.api.API;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.extension.InvocationInterceptor;
 import org.junit.jupiter.api.extension.InvocationInterceptor.Invocation;
 import org.junit.jupiter.engine.extension.ExtensionRegistry;
@@ -69,11 +70,12 @@ public class InvocationInterceptorChain {
 	}
 
 	@FunctionalInterface
-	public interface InterceptorCall<T> {
+	public interface InterceptorCall<T extends @Nullable Object> {
 
 		T apply(InvocationInterceptor interceptor, Invocation<T> invocation) throws Throwable;
 
-		static InterceptorCall<Void> ofVoid(VoidInterceptorCall call) {
+		@SuppressWarnings("NullAway")
+		static InterceptorCall<@Nullable Void> ofVoid(VoidInterceptorCall call) {
 			return ((interceptorChain, invocation) -> {
 				call.apply(interceptorChain, invocation);
 				return null;
@@ -85,21 +87,12 @@ public class InvocationInterceptorChain {
 	@FunctionalInterface
 	public interface VoidInterceptorCall {
 
-		void apply(InvocationInterceptor interceptor, Invocation<Void> invocation) throws Throwable;
+		void apply(InvocationInterceptor interceptor, Invocation<@Nullable Void> invocation) throws Throwable;
 
 	}
 
-	private static class InterceptedInvocation<T> implements Invocation<T> {
-
-		private final Invocation<T> invocation;
-		private final InterceptorCall<T> call;
-		private final InvocationInterceptor interceptor;
-
-		InterceptedInvocation(Invocation<T> invocation, InterceptorCall<T> call, InvocationInterceptor interceptor) {
-			this.invocation = invocation;
-			this.call = call;
-			this.interceptor = interceptor;
-		}
+	private record InterceptedInvocation<T>(Invocation<T> invocation, InterceptorCall<T> call,
+			InvocationInterceptor interceptor) implements Invocation<T> {
 
 		@Override
 		public T proceed() throws Throwable {
@@ -112,7 +105,7 @@ public class InvocationInterceptorChain {
 		}
 	}
 
-	private static class ValidatingInvocation<T> implements Invocation<T> {
+	private static class ValidatingInvocation<T extends @Nullable Object> implements Invocation<T> {
 
 		private static final Logger logger = LoggerFactory.getLogger(ValidatingInvocation.class);
 

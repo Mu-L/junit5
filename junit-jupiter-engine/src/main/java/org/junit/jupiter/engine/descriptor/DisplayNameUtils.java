@@ -10,8 +10,6 @@
 
 package org.junit.jupiter.engine.descriptor;
 
-import static java.util.Collections.emptyList;
-import static java.util.Collections.unmodifiableList;
 import static org.junit.platform.commons.support.AnnotationSupport.findAnnotation;
 
 import java.lang.reflect.AnnotatedElement;
@@ -22,6 +20,7 @@ import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DisplayNameGeneration;
 import org.junit.jupiter.api.DisplayNameGenerator;
@@ -82,12 +81,12 @@ final class DisplayNameUtils {
 	}
 
 	static void validateAnnotation(AnnotatedElement element, Supplier<String> elementDescription,
-			Supplier<TestSource> sourceProvider, DiscoveryIssueReporter reporter) {
+			Supplier<@Nullable TestSource> sourceProvider, DiscoveryIssueReporter reporter) {
 		findAnnotation(element, DisplayName.class) //
 				.map(DisplayName::value) //
 				.filter(StringUtils::isBlank) //
 				.ifPresent(__ -> {
-					String message = String.format("@DisplayName on %s must be declared with a non-blank value.",
+					String message = "@DisplayName on %s must be declared with a non-blank value.".formatted(
 						elementDescription.get());
 					reporter.reportIssue(
 						DiscoveryIssue.builder(Severity.WARNING, message).source(sourceProvider.get()).build());
@@ -125,16 +124,12 @@ final class DisplayNameUtils {
 			Class<?> testClass, JupiterConfiguration configuration,
 			BiFunction<DisplayNameGenerator, List<Class<?>>, String> generatorFunction) {
 		return () -> {
-			List<Class<?>> enclosingInstanceTypes = makeUnmodifiable(enclosingInstanceTypesSupplier.get());
+			List<Class<?>> enclosingInstanceTypes = List.copyOf(enclosingInstanceTypesSupplier.get());
 			return findDisplayNameGenerator(enclosingInstanceTypes, testClass) //
 					.map(it -> generatorFunction.apply(it, enclosingInstanceTypes)) //
 					.orElseGet(() -> generatorFunction.apply(configuration.getDefaultDisplayNameGenerator(),
 						enclosingInstanceTypes));
 		};
-	}
-
-	private static <T> List<T> makeUnmodifiable(List<T> list) {
-		return list.isEmpty() ? emptyList() : unmodifiableList(list);
 	}
 
 	private static Optional<DisplayNameGenerator> findDisplayNameGenerator(List<Class<?>> enclosingInstanceTypes,

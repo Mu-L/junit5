@@ -5,6 +5,7 @@ import org.gradle.internal.os.OperatingSystem
 
 plugins {
 	id("junitbuild.java-library-conventions")
+	id("junitbuild.java-nullability-conventions")
 	id("junitbuild.junit4-compatibility")
 	id("junitbuild.testing-conventions")
 	id("junitbuild.jmh-conventions")
@@ -39,7 +40,6 @@ dependencies {
 	testImplementation(projects.junitPlatformSuiteEngine)
 
 	// --- Things we are testing with ---------------------------------------------
-	testImplementation(projects.junitPlatformRunner)
 	testImplementation(projects.junitPlatformTestkit)
 	testImplementation(testFixtures(projects.junitPlatformCommons))
 	testImplementation(testFixtures(projects.junitPlatformEngine))
@@ -132,7 +132,7 @@ tasks {
 		dependsOn(testWoodstox)
 	}
 	named<JavaCompile>(processStarter.compileJavaTaskName).configure {
-		options.release = javaLibrary.testJavaVersion.majorVersion.toInt()
+		options.release = javaLibrary.testJavaVersion.map { it.majorVersion.toInt() }
 	}
 	named<Checkstyle>("checkstyle${processStarter.name.capitalized()}").configure {
 		config = resources.text.fromFile(checkstyle.configDirectory.file("checkstyleMain.xml"))

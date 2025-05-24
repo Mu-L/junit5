@@ -10,14 +10,17 @@
 
 package org.junit.platform.suite.engine;
 
+import java.io.Serial;
+
 import org.junit.platform.commons.JUnitException;
 
 class NoTestsDiscoveredException extends JUnitException {
 
+	@Serial
 	private static final long serialVersionUID = 1L;
 
 	NoTestsDiscoveredException(Class<?> suiteClass) {
-		super(String.format("Suite [%s] did not discover any tests", suiteClass.getName()));
+		super("Suite [%s] did not discover any tests".formatted(suiteClass.getName()));
 	}
 
 }

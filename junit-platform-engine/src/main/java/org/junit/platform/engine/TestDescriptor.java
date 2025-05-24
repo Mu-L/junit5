@@ -22,6 +22,7 @@ import java.util.Set;
 import java.util.function.UnaryOperator;
 
 import org.apiguardian.api.API;
+import org.jspecify.annotations.Nullable;
 import org.junit.platform.commons.util.Preconditions;
 
 /**
@@ -99,7 +100,7 @@ public interface TestDescriptor {
 	 *
 	 * @param parent the new parent of this descriptor; may be {@code null}.
 	 */
-	void setParent(TestDescriptor parent);
+	void setParent(@Nullable TestDescriptor parent);
 
 	/**
 	 * Get the immutable set of <em>children</em> of this descriptor.
@@ -120,7 +121,7 @@ public interface TestDescriptor {
 	 */
 	@API(status = STABLE, since = "1.10")
 	default Set<? extends TestDescriptor> getAncestors() {
-		if (!getParent().isPresent()) {
+		if (getParent().isEmpty()) {
 			return Collections.emptySet();
 		}
 		TestDescriptor parent = getParent().get();
@@ -215,7 +216,7 @@ public interface TestDescriptor {
 	 * <p>A <em>root</em> descriptor is a descriptor without a parent.
 	 */
 	default boolean isRoot() {
-		return !getParent().isPresent();
+		return getParent().isEmpty();
 	}
 
 	/**

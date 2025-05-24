@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.Nullable;
 import org.junit.platform.commons.logging.Logger;
 import org.junit.platform.commons.logging.LoggerFactory;
 import org.junit.platform.commons.util.ClassLoaderUtils;
@@ -65,20 +66,12 @@ class LauncherConfigurationParameters implements ConfigurationParameters {
 	}
 
 	@Override
-	@SuppressWarnings("deprecation")
-	public int size() {
-		return providers.stream() //
-				.mapToInt(ParameterProvider::size) //
-				.sum();
-	}
-
-	@Override
 	public Set<String> keySet() {
 		return providers.stream().map(ParameterProvider::keySet).flatMap(Collection::stream).collect(
 			Collectors.toSet());
 	}
 
-	private String getProperty(String key) {
+	private @Nullable String getProperty(String key) {
 		Preconditions.notBlank(key, "key must not be null or blank");
 		return providers.stream() //
 				.map(parameterProvider -> parameterProvider.getValue(key)) //
@@ -100,6 +93,8 @@ class LauncherConfigurationParameters implements ConfigurationParameters {
 		private final List<String> configResources = new ArrayList<>();
 		private boolean implicitProvidersEnabled = true;
 		private String configFileName = ConfigurationParameters.CONFIG_FILE_NAME;
+
+		@Nullable
 		private ConfigurationParameters parentConfigurationParameters;
 
 		private Builder() {
@@ -157,24 +152,16 @@ class LauncherConfigurationParameters implements ConfigurationParameters {
 
 	private interface ParameterProvider {
 
+		@Nullable
 		String getValue(String key);
-
-		default int size() {
-			return 0;
-		}
 
 		Set<String> keySet();
 
 		static ParameterProvider explicit(Map<String, String> configParams) {
 			return new ParameterProvider() {
 				@Override
-				public String getValue(String key) {
+				public @Nullable String getValue(String key) {
 					return configParams.get(key);
-				}
-
-				@Override
-				public int size() {
-					return configParams.size();
 				}
 
 				@Override
@@ -194,7 +181,7 @@ class LauncherConfigurationParameters implements ConfigurationParameters {
 		static ParameterProvider systemProperties() {
 			return new ParameterProvider() {
 				@Override
-				public String getValue(String key) {
+				public @Nullable String getValue(String key) {
 					try {
 						return System.getProperty(key);
 					}
@@ -241,14 +228,8 @@ class LauncherConfigurationParameters implements ConfigurationParameters {
 		static ParameterProvider inherited(ConfigurationParameters configParams) {
 			return new ParameterProvider() {
 				@Override
-				public String getValue(String key) {
+				public @Nullable String getValue(String key) {
 					return configParams.get(key).orElse(null);
-				}
-
-				@Override
-				@SuppressWarnings("deprecation")
-				public int size() {
-					return configParams.size();
 				}
 
 				@Override
@@ -284,14 +265,14 @@ class LauncherConfigurationParameters implements ConfigurationParameters {
 							Stream.of(configFileUrl + " (*)"), //
 							resources.stream().skip(1).map(URL::toString) //
 						).collect(joining("\n- ", "\n- ", ""));
-						return String.format(
-							"Discovered %d '%s' configuration files on the classpath (see below); only the first (*) will be used.%s",
+						return "Discovered %d '%s' configuration files on the classpath (see below); only the first (*) will be used.%s".formatted(
 							resources.size(), configFileName, formattedResourceList);
 					});
 				}
 
-				logger.config(() -> String.format(
-					"Loading JUnit Platform configuration parameters from classpath resource [%s].", configFileUrl));
+				logger.config(
+					() -> "Loading JUnit Platform configuration parameters from classpath resource [%s].".formatted(
+						configFileUrl));
 				URLConnection urlConnection = configFileUrl.openConnection();
 				urlConnection.setUseCaches(false);
 				try (InputStream inputStream = urlConnection.getInputStream()) {
@@ -301,8 +282,7 @@ class LauncherConfigurationParameters implements ConfigurationParameters {
 		}
 		catch (Exception ex) {
 			logger.warn(ex,
-				() -> String.format(
-					"Failed to load JUnit Platform configuration parameters from classpath resource [%s].",
+				() -> "Failed to load JUnit Platform configuration parameters from classpath resource [%s].".formatted(
 					configFileName));
 		}
 

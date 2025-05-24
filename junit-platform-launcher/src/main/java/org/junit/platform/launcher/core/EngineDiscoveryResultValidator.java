@@ -39,12 +39,11 @@ class EngineDiscoveryResultValidator {
 	 */
 	void validate(TestEngine testEngine, TestDescriptor root) {
 		Preconditions.notNull(root,
-			() -> String.format(
-				"The discover() method for TestEngine with ID '%s' must return a non-null root TestDescriptor.",
+			() -> "The discover() method for TestEngine with ID '%s' must return a non-null root TestDescriptor.".formatted(
 				testEngine.getId()));
 		Optional<String> cyclicGraphInfo = getCyclicGraphInfo(root);
-		Preconditions.condition(!cyclicGraphInfo.isPresent(),
-			() -> String.format("The discover() method for TestEngine with ID '%s' returned a cyclic graph; %s",
+		Preconditions.condition(cyclicGraphInfo.isEmpty(),
+			() -> "The discover() method for TestEngine with ID '%s' returned a cyclic graph; %s".formatted(
 				testEngine.getId(), cyclicGraphInfo.get()));
 	}
 
@@ -69,7 +68,7 @@ class EngineDiscoveryResultValidator {
 					List<UniqueId> path2 = findPath(visited, parent.getUniqueId());
 					path2.add(uid);
 
-					return Optional.of(String.format("%s exists in at least two paths:\n(1) %s\n(2) %s", uid,
+					return Optional.of("%s exists in at least two paths:\n(1) %s\n(2) %s".formatted(uid,
 						formatted(path1), formatted(path2)));
 				}
 				else {

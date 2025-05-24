@@ -10,20 +10,19 @@
 
 package org.junit.jupiter.params.provider;
 
+import static java.util.Objects.requireNonNull;
 import static java.util.Spliterators.spliteratorUnknownSize;
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.StreamSupport.stream;
 import static org.junit.jupiter.params.provider.CsvArgumentsProvider.getHeaders;
 import static org.junit.jupiter.params.provider.CsvArgumentsProvider.handleCsvException;
 import static org.junit.jupiter.params.provider.CsvArgumentsProvider.processCsvRecord;
 import static org.junit.jupiter.params.provider.CsvParserFactory.createParserFor;
-import static org.junit.platform.commons.util.CollectionUtils.toSet;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -33,6 +32,7 @@ import java.util.stream.Stream;
 
 import com.univocity.parsers.csv.CsvParser;
 
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.support.ParameterDeclarations;
 import org.junit.platform.commons.JUnitException;
@@ -46,10 +46,6 @@ class CsvFileArgumentsProvider extends AnnotationBasedArgumentsProvider<CsvFileS
 
 	private final InputStreamProvider inputStreamProvider;
 
-	private Charset charset;
-	private int numLinesToSkip;
-	private CsvParser csvParser;
-
 	CsvFileArgumentsProvider() {
 		this(DefaultInputStreamProvider.INSTANCE);
 	}
@@ -61,19 +57,18 @@ class CsvFileArgumentsProvider extends AnnotationBasedArgumentsProvider<CsvFileS
 	@Override
 	protected Stream<? extends Arguments> provideArguments(ParameterDeclarations parameters, ExtensionContext context,
 			CsvFileSource csvFileSource) {
-		this.charset = getCharsetFrom(csvFileSource);
-		this.numLinesToSkip = csvFileSource.numLinesToSkip();
-		this.csvParser = createParserFor(csvFileSource);
+		Charset charset = getCharsetFrom(csvFileSource);
+		CsvParser csvParser = createParserFor(csvFileSource);
 
 		Stream<Source> resources = Arrays.stream(csvFileSource.resources()).map(inputStreamProvider::classpathResource);
 		Stream<Source> files = Arrays.stream(csvFileSource.files()).map(inputStreamProvider::file);
-		List<Source> sources = Stream.concat(resources, files).collect(toList());
+		List<Source> sources = Stream.concat(resources, files).toList();
 
 		// @formatter:off
 		return Preconditions.notEmpty(sources, "Resources or files must not be empty")
 				.stream()
 				.map(source -> source.open(context))
-				.map(inputStream -> beginParsing(inputStream, csvFileSource))
+				.map(inputStream -> beginParsing(inputStream, csvFileSource, csvParser, charset))
 				.flatMap(parser -> toStream(parser, csvFileSource));
 		// @formatter:on
 	}
@@ -87,20 +82,21 @@ class CsvFileArgumentsProvider extends AnnotationBasedArgumentsProvider<CsvFileS
 		}
 	}
 
-	private CsvParser beginParsing(InputStream inputStream, CsvFileSource csvFileSource) {
+	private CsvParser beginParsing(InputStream inputStream, CsvFileSource csvFileSource, CsvParser csvParser,
+			Charset charset) {
 		try {
-			this.csvParser.beginParsing(inputStream, this.charset);
+			csvParser.beginParsing(inputStream, charset);
 		}
 		catch (Throwable throwable) {
 			throw handleCsvException(throwable, csvFileSource);
 		}
-		return this.csvParser;
+		return csvParser;
 	}
 
 	private Stream<Arguments> toStream(CsvParser csvParser, CsvFileSource csvFileSource) {
 		CsvParserIterator iterator = new CsvParserIterator(csvParser, csvFileSource);
 		return stream(spliteratorUnknownSize(iterator, Spliterator.ORDERED), false) //
-				.skip(this.numLinesToSkip) //
+				.skip(csvFileSource.numLinesToSkip()) //
 				.onClose(() -> {
 					try {
 						csvParser.stopParsing();
@@ -117,14 +113,17 @@ class CsvFileArgumentsProvider extends AnnotationBasedArgumentsProvider<CsvFileS
 		private final CsvFileSource csvFileSource;
 		private final boolean useHeadersInDisplayName;
 		private final Set<String> nullValues;
+
+		@Nullable
 		private Arguments nextArguments;
-		private String[] headers;
+
+		private String @Nullable [] headers;
 
 		CsvParserIterator(CsvParser csvParser, CsvFileSource csvFileSource) {
 			this.csvParser = csvParser;
 			this.csvFileSource = csvFileSource;
 			this.useHeadersInDisplayName = csvFileSource.useHeadersInDisplayName();
-			this.nullValues = toSet(csvFileSource.nullValues());
+			this.nullValues = Set.of(csvFileSource.nullValues());
 			advance();
 		}
 
@@ -137,7 +136,7 @@ class CsvFileArgumentsProvider extends AnnotationBasedArgumentsProvider<CsvFileS
 		public Arguments next() {
 			Arguments result = this.nextArguments;
 			advance();
-			return result;
+			return requireNonNull(result);
 		}
 
 		private void advance() {
@@ -201,7 +200,7 @@ class CsvFileArgumentsProvider extends AnnotationBasedArgumentsProvider<CsvFileS
 		public InputStream openFile(String path) {
 			Preconditions.notBlank(path, () -> "File [" + path + "] must not be null or blank");
 			try {
-				return Files.newInputStream(Paths.get(path));
+				return Files.newInputStream(Path.of(path));
 			}
 			catch (IOException e) {
 				throw new JUnitException("File [" + path + "] could not be read", e);

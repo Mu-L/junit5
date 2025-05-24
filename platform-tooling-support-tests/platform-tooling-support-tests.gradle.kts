@@ -7,6 +7,7 @@ import java.time.Duration
 
 plugins {
 	id("junitbuild.build-parameters")
+	id("junitbuild.java-nullability-conventions")
 	id("junitbuild.kotlin-library-conventions")
 	id("junitbuild.testing-conventions")
 }
@@ -59,6 +60,7 @@ dependencies {
 	thirdPartyJars(libs.assertj)
 	thirdPartyJars(libs.apiguardian)
 	thirdPartyJars(libs.hamcrest)
+	thirdPartyJars(libs.jspecify)
 	thirdPartyJars(libs.opentest4j)
 	thirdPartyJars(libs.openTestReporting.tooling.spi)
 	thirdPartyJars(libs.jimfs)
@@ -114,11 +116,15 @@ val normalizeMavenRepo by tasks.registering(Sync::class) {
 val archUnit by testing.suites.registering(JvmTestSuite::class) {
 	dependencies {
 		implementation(libs.archunit) {
-			because("checking the architecture of JUnit 5")
+			because("checking the architecture")
 		}
 		implementation(libs.apiguardian) {
 			because("we validate that public classes are annotated")
 		}
+		implementation(libs.jspecify) {
+			because("we validate that packages are annotated")
+		}
+		implementation(libs.assertj)
 		runtimeOnly.bundle(libs.bundles.log4j)
 		val modularProjects: List<Project> by rootProject
 		modularProjects.forEach {
@@ -211,12 +217,12 @@ val test by testing.suites.getting(JvmTestSuite::class) {
 
 				develocity {
 					testDistribution {
-						requirements.add("jdk=8")
+						requirements.add("jdk=17")
 						this as TestDistributionConfigurationInternal
 						preferredMaxDuration = Duration.ofMillis(500)
 					}
 				}
-				jvmArgumentProviders += JavaHomeDir(project, 8, develocity.testDistribution.enabled)
+				jvmArgumentProviders += JavaHomeDir(project, 17, develocity.testDistribution.enabled)
 				jvmArgumentProviders += JavaHomeDir(project, 17, develocity.testDistribution.enabled)
 
 				val gradleJavaVersion = JavaVersion.current().majorVersion.toInt()

@@ -15,6 +15,7 @@ import static org.junit.platform.commons.util.ClassLoaderUtils.getClassLoader;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 import org.junit.jupiter.params.aggregator.ArgumentsAccessor;
@@ -71,19 +72,15 @@ class ParameterizedInvocationContext<T extends ParameterizedDeclarationContext<?
 	private void storeParameterInfo(ExtensionContext context) {
 		ParameterDeclarations declarations = this.declarationContext.getResolverFacade().getIndexedParameterDeclarations();
 		ClassLoader classLoader = getClassLoader(this.declarationContext.getTestClass());
+		@Nullable
 		Object[] arguments = this.arguments.getConsumedPayloads();
 		ArgumentsAccessor accessor = DefaultArgumentsAccessor.create(context, invocationIndex, classLoader, arguments);
 		new DefaultParameterInfo(declarations, accessor).store(context);
 	}
 
 	@SuppressWarnings({ "deprecation", "try" })
-	private static class CloseableArgument implements ExtensionContext.Store.CloseableResource, AutoCloseable {
-
-		private final AutoCloseable autoCloseable;
-
-		CloseableArgument(AutoCloseable autoCloseable) {
-			this.autoCloseable = autoCloseable;
-		}
+	private record CloseableArgument(AutoCloseable autoCloseable)
+			implements ExtensionContext.Store.CloseableResource, AutoCloseable {
 
 		@Override
 		public void close() throws Exception {
