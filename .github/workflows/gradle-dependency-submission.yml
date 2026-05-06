@@ -29,4 +29,9 @@ jobs:
         java-version: 25
         check-latest: true
     - name: Generate and submit dependency graph
+      id: dependency-submission
+      uses: gradle/actions/dependency-submission@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
+      continue-on-error: true
+    - name: Generate and submit dependency graph (retry)
+      if: steps.dependency-submission.outcome == 'failure'
       uses: gradle/actions/dependency-submission@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
