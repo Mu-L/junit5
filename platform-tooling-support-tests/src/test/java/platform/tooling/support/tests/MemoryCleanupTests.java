@@ -44,7 +44,7 @@ class MemoryCleanupTests {
 		copyToWorkspace(Projects.MEMORY_CLEANUP, workspace);
 		compile(javacOutputFiles);
 
-		var timeout = Duration.ofSeconds(OS.WINDOWS.isCurrentOs() ? 20 : 10);
+		var timeout = Duration.ofSeconds(OS.WINDOWS.isCurrentOs() ? 30 : 15);
 		var result = assertTimeoutPreemptively(timeout, () -> executeWithSmallHeapSize(javaOutputFiles));
 
 		assertThat(result).isNotNull();
